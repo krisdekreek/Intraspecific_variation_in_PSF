@@ -1,0 +1,1445 @@
+Lmod has detected the following error: These module(s) or extension(s) exist
+but cannot be loaded as requested: "gcc"
+   Try: "module spider gcc" to see how to load the module(s).
+
+
+
+Lmod has detected the following error: These module(s) or extension(s) exist
+but cannot be loaded as requested: "shared"
+   Try: "module spider shared" to see how to load the module(s).
+
+
+
+[1] "R version 4.4.2 (2024-10-31)"
+[1] "/home/WUR/kreek001/.R_442_ext"                                              
+[2] "/shared/easybuild/software/noble/2024/zen3/R/4.4.2-gfbf-2024a/lib/R/library"
+Loading required package: Rcpp
+[1] '1.34.0'
+Loading required package: BiocGenerics
+
+Attaching package: 'BiocGenerics'
+
+The following objects are masked from 'package:stats':
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from 'package:base':
+
+    Filter, Find, Map, Position, Reduce, anyDuplicated, aperm, append,
+    as.data.frame, basename, cbind, colnames, dirname, do.call,
+    duplicated, eval, evalq, get, grep, grepl, intersect, is.unsorted,
+    lapply, mapply, match, mget, order, paste, pmax, pmax.int, pmin,
+    pmin.int, rank, rbind, rownames, sapply, saveRDS, setdiff, table,
+    tapply, union, unique, unsplit, which.max, which.min
+
+Loading required package: BiocParallel
+Loading required package: Biostrings
+Loading required package: S4Vectors
+Loading required package: stats4
+
+Attaching package: 'S4Vectors'
+
+The following object is masked from 'package:utils':
+
+    findMatches
+
+The following objects are masked from 'package:base':
+
+    I, expand.grid, unname
+
+Loading required package: IRanges
+Loading required package: XVector
+Loading required package: GenomeInfoDb
+
+Attaching package: 'Biostrings'
+
+The following object is masked from 'package:base':
+
+    strsplit
+
+Loading required package: Rsamtools
+Loading required package: GenomicRanges
+Loading required package: GenomicAlignments
+Loading required package: SummarizedExperiment
+Loading required package: MatrixGenerics
+Loading required package: matrixStats
+
+Attaching package: 'MatrixGenerics'
+
+The following objects are masked from 'package:matrixStats':
+
+    colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+    colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+    colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+    colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+    colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+    colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+    colWeightedMeans, colWeightedMedians, colWeightedSds,
+    colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+    rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+    rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+    rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+    rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+    rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+    rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+    rowWeightedSds, rowWeightedVars
+
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+Attaching package: 'Biobase'
+
+The following object is masked from 'package:MatrixGenerics':
+
+    rowMedians
+
+The following objects are masked from 'package:matrixStats':
+
+    anyMissing, rowMedians
+
+[1] '1.64.0'
+
+Attaching package: 'dplyr'
+
+The following object is masked from 'package:ShortRead':
+
+    id
+
+The following objects are masked from 'package:GenomicAlignments':
+
+    first, last
+
+The following object is masked from 'package:Biobase':
+
+    combine
+
+The following object is masked from 'package:matrixStats':
+
+    count
+
+The following objects are masked from 'package:GenomicRanges':
+
+    intersect, setdiff, union
+
+The following objects are masked from 'package:Biostrings':
+
+    collapse, intersect, setdiff, setequal, union
+
+The following object is masked from 'package:GenomeInfoDb':
+
+    intersect
+
+The following object is masked from 'package:XVector':
+
+    slice
+
+The following objects are masked from 'package:IRanges':
+
+    collapse, desc, intersect, setdiff, slice, union
+
+The following objects are masked from 'package:S4Vectors':
+
+    first, intersect, rename, setdiff, setequal, union
+
+The following objects are masked from 'package:BiocGenerics':
+
+    combine, intersect, setdiff, union
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+[1] '1.1.4'
+
+Attaching package: 'tidyr'
+
+The following object is masked from 'package:S4Vectors':
+
+    expand
+
+[1] '1.3.1'
+
+Attaching package: 'Hmisc'
+
+The following objects are masked from 'package:dplyr':
+
+    src, summarize
+
+The following object is masked from 'package:ShortRead':
+
+    zoom
+
+The following object is masked from 'package:Biobase':
+
+    contents
+
+The following objects are masked from 'package:Biostrings':
+
+    mask, translate
+
+The following objects are masked from 'package:base':
+
+    format.pval, units
+
+[1] '5.2.3'
+[1] '4.0.0'
+
+Attaching package: 'plotly'
+
+The following object is masked from 'package:ggplot2':
+
+    last_plot
+
+The following object is masked from 'package:Hmisc':
+
+    subplot
+
+The following object is masked from 'package:XVector':
+
+    slice
+
+The following object is masked from 'package:IRanges':
+
+    slice
+
+The following object is masked from 'package:S4Vectors':
+
+    rename
+
+The following object is masked from 'package:stats':
+
+    filter
+
+The following object is masked from 'package:graphics':
+
+    layout
+
+[1] '4.11.0'
+Processing: Blank2 
+Sample 1 - 214 reads in 83 unique sequences.
+Sample 1 - 214 reads in 73 unique sequences.
+Processing: Blank3 
+Sample 1 - 693 reads in 339 unique sequences.
+Sample 1 - 693 reads in 296 unique sequences.
+Processing: Blank4 
+Sample 1 - 6351 reads in 1131 unique sequences.
+Sample 1 - 6351 reads in 927 unique sequences.
+Processing: Blank5 
+Sample 1 - 1366 reads in 542 unique sequences.
+Sample 1 - 1366 reads in 474 unique sequences.
+Processing: Blank6 
+Sample 1 - 4726 reads in 1313 unique sequences.
+Sample 1 - 4726 reads in 1117 unique sequences.
+Processing: C005 
+Sample 1 - 55981 reads in 28396 unique sequences.
+Sample 1 - 55981 reads in 26195 unique sequences.
+Processing: C006 
+Sample 1 - 58536 reads in 31489 unique sequences.
+Sample 1 - 58536 reads in 27822 unique sequences.
+Processing: C007 
+Sample 1 - 58129 reads in 30827 unique sequences.
+Sample 1 - 58129 reads in 27521 unique sequences.
+Processing: C009 
+Sample 1 - 64894 reads in 33963 unique sequences.
+Sample 1 - 64894 reads in 30281 unique sequences.
+Processing: C010 
+Sample 1 - 59426 reads in 31977 unique sequences.
+Sample 1 - 59426 reads in 28391 unique sequences.
+Processing: C015 
+Sample 1 - 58945 reads in 32248 unique sequences.
+Sample 1 - 58945 reads in 28358 unique sequences.
+Processing: C016 
+Sample 1 - 56205 reads in 31059 unique sequences.
+Sample 1 - 56205 reads in 27728 unique sequences.
+Processing: C017 
+Sample 1 - 56131 reads in 30446 unique sequences.
+Sample 1 - 56131 reads in 26952 unique sequences.
+Processing: C018 
+Sample 1 - 57266 reads in 30881 unique sequences.
+Sample 1 - 57266 reads in 27394 unique sequences.
+Processing: C019 
+Sample 1 - 58700 reads in 32943 unique sequences.
+Sample 1 - 58700 reads in 29071 unique sequences.
+Processing: C020 
+Sample 1 - 56680 reads in 32025 unique sequences.
+Sample 1 - 56680 reads in 28615 unique sequences.
+Processing: C025 
+Sample 1 - 57378 reads in 30338 unique sequences.
+Sample 1 - 57378 reads in 27279 unique sequences.
+Processing: C026 
+Sample 1 - 57702 reads in 29814 unique sequences.
+Sample 1 - 57702 reads in 26704 unique sequences.
+Processing: C027 
+Sample 1 - 59300 reads in 30758 unique sequences.
+Sample 1 - 59300 reads in 28105 unique sequences.
+Processing: C028 
+Sample 1 - 58873 reads in 29446 unique sequences.
+Sample 1 - 58873 reads in 27790 unique sequences.
+Processing: C029 
+Sample 1 - 56593 reads in 27715 unique sequences.
+Sample 1 - 56593 reads in 26759 unique sequences.
+Processing: C030 
+Sample 1 - 59179 reads in 34985 unique sequences.
+Sample 1 - 59179 reads in 31145 unique sequences.
+Processing: C035 
+Sample 1 - 55945 reads in 28714 unique sequences.
+Sample 1 - 55945 reads in 25145 unique sequences.
+Processing: C036 
+Sample 1 - 56438 reads in 28934 unique sequences.
+Sample 1 - 56438 reads in 26854 unique sequences.
+Processing: C037 
+Sample 1 - 55358 reads in 29120 unique sequences.
+Sample 1 - 55358 reads in 26336 unique sequences.
+Processing: C038 
+Sample 1 - 57596 reads in 30860 unique sequences.
+Sample 1 - 57596 reads in 27745 unique sequences.
+Processing: C039 
+Sample 1 - 58246 reads in 31477 unique sequences.
+Sample 1 - 58246 reads in 29490 unique sequences.
+Processing: C040 
+Sample 1 - 60197 reads in 32020 unique sequences.
+Sample 1 - 60197 reads in 27993 unique sequences.
+Processing: C043 
+Sample 1 - 33476 reads in 17941 unique sequences.
+Sample 1 - 33476 reads in 16664 unique sequences.
+Processing: C045 
+Sample 1 - 60255 reads in 29653 unique sequences.
+Sample 1 - 60255 reads in 28449 unique sequences.
+Processing: C047 
+Sample 1 - 56810 reads in 29528 unique sequences.
+Sample 1 - 56810 reads in 26736 unique sequences.
+Processing: C048 
+Sample 1 - 57429 reads in 30215 unique sequences.
+Sample 1 - 57429 reads in 27878 unique sequences.
+Processing: C050 
+Sample 1 - 58161 reads in 33350 unique sequences.
+Sample 1 - 58161 reads in 29258 unique sequences.
+Processing: C055 
+Sample 1 - 55574 reads in 31327 unique sequences.
+Sample 1 - 55574 reads in 28947 unique sequences.
+Processing: C056 
+Sample 1 - 57213 reads in 30041 unique sequences.
+Sample 1 - 57213 reads in 28204 unique sequences.
+Processing: C057 
+Sample 1 - 60023 reads in 30999 unique sequences.
+Sample 1 - 60023 reads in 29355 unique sequences.
+Processing: C058 
+Sample 1 - 66207 reads in 33641 unique sequences.
+Sample 1 - 66207 reads in 30393 unique sequences.
+Processing: C059 
+Sample 1 - 56253 reads in 28905 unique sequences.
+Sample 1 - 56253 reads in 26440 unique sequences.
+Processing: C060 
+Sample 1 - 57476 reads in 31000 unique sequences.
+Sample 1 - 57476 reads in 28340 unique sequences.
+Processing: C064 
+Sample 1 - 55570 reads in 29280 unique sequences.
+Sample 1 - 55570 reads in 26591 unique sequences.
+Processing: C065 
+Sample 1 - 59567 reads in 31170 unique sequences.
+Sample 1 - 59567 reads in 28111 unique sequences.
+Processing: C066 
+Sample 1 - 58866 reads in 29808 unique sequences.
+Sample 1 - 58866 reads in 27081 unique sequences.
+Processing: C067 
+Sample 1 - 59615 reads in 30159 unique sequences.
+Sample 1 - 59615 reads in 27269 unique sequences.
+Processing: C068 
+Sample 1 - 59743 reads in 30769 unique sequences.
+Sample 1 - 59743 reads in 28028 unique sequences.
+Processing: C069 
+Sample 1 - 55584 reads in 31419 unique sequences.
+Sample 1 - 55584 reads in 27639 unique sequences.
+Processing: C075 
+Sample 1 - 56531 reads in 29953 unique sequences.
+Sample 1 - 56531 reads in 26686 unique sequences.
+Processing: C076 
+Sample 1 - 55498 reads in 30557 unique sequences.
+Sample 1 - 55498 reads in 27556 unique sequences.
+Processing: C077 
+Sample 1 - 59389 reads in 27643 unique sequences.
+Sample 1 - 59389 reads in 25406 unique sequences.
+Processing: C078 
+Sample 1 - 57085 reads in 29686 unique sequences.
+Sample 1 - 57085 reads in 26635 unique sequences.
+Processing: C079 
+Sample 1 - 70547 reads in 36512 unique sequences.
+Sample 1 - 70547 reads in 34232 unique sequences.
+Processing: C080 
+Sample 1 - 57389 reads in 30765 unique sequences.
+Sample 1 - 57389 reads in 28617 unique sequences.
+Processing: C085 
+Sample 1 - 69680 reads in 40153 unique sequences.
+Sample 1 - 69680 reads in 36272 unique sequences.
+Processing: C086 
+Sample 1 - 70852 reads in 37359 unique sequences.
+Sample 1 - 70852 reads in 34421 unique sequences.
+Processing: C087 
+Sample 1 - 57976 reads in 27426 unique sequences.
+Sample 1 - 57976 reads in 24639 unique sequences.
+Processing: C088 
+Sample 1 - 63537 reads in 28548 unique sequences.
+Sample 1 - 63537 reads in 25816 unique sequences.
+Processing: C089 
+Sample 1 - 65733 reads in 28963 unique sequences.
+Sample 1 - 65733 reads in 25847 unique sequences.
+Processing: C090 
+Sample 1 - 69549 reads in 32560 unique sequences.
+Sample 1 - 69549 reads in 28065 unique sequences.
+Processing: C094 
+Sample 1 - 59501 reads in 28796 unique sequences.
+Sample 1 - 59501 reads in 25886 unique sequences.
+Processing: C095 
+Sample 1 - 61699 reads in 31093 unique sequences.
+Sample 1 - 61699 reads in 26971 unique sequences.
+Processing: C096 
+Sample 1 - 61133 reads in 28581 unique sequences.
+Sample 1 - 61133 reads in 25933 unique sequences.
+Processing: C097 
+Sample 1 - 62757 reads in 29770 unique sequences.
+Sample 1 - 62757 reads in 26214 unique sequences.
+Processing: C099 
+Sample 1 - 59280 reads in 30346 unique sequences.
+Sample 1 - 59280 reads in 26819 unique sequences.
+Processing: C101 
+Sample 1 - 59327 reads in 29537 unique sequences.
+Sample 1 - 59327 reads in 25872 unique sequences.
+Processing: C104 
+Sample 1 - 60811 reads in 28102 unique sequences.
+Sample 1 - 60811 reads in 25666 unique sequences.
+Processing: C105 
+Sample 1 - 60646 reads in 28561 unique sequences.
+Sample 1 - 60646 reads in 25888 unique sequences.
+Processing: C106 
+Sample 1 - 57721 reads in 28597 unique sequences.
+Sample 1 - 57721 reads in 25361 unique sequences.
+Processing: C110 
+Sample 1 - 61994 reads in 30104 unique sequences.
+Sample 1 - 61994 reads in 26295 unique sequences.
+Processing: C113 
+Sample 1 - 58729 reads in 28620 unique sequences.
+Sample 1 - 58729 reads in 25613 unique sequences.
+Processing: C115 
+Sample 1 - 57922 reads in 26124 unique sequences.
+Sample 1 - 57922 reads in 24449 unique sequences.
+Processing: C116 
+Sample 1 - 57286 reads in 27000 unique sequences.
+Sample 1 - 57286 reads in 24542 unique sequences.
+Processing: C117 
+Sample 1 - 60793 reads in 29492 unique sequences.
+Sample 1 - 60793 reads in 27286 unique sequences.
+Processing: C118 
+Sample 1 - 58876 reads in 27660 unique sequences.
+Sample 1 - 58876 reads in 24610 unique sequences.
+Processing: C120 
+Sample 1 - 60600 reads in 28992 unique sequences.
+Sample 1 - 60600 reads in 25615 unique sequences.
+Processing: C126 
+Sample 1 - 60161 reads in 29467 unique sequences.
+Sample 1 - 60161 reads in 26654 unique sequences.
+Processing: C127 
+Sample 1 - 57835 reads in 28184 unique sequences.
+Sample 1 - 57835 reads in 25241 unique sequences.
+Processing: C128 
+Sample 1 - 70893 reads in 32028 unique sequences.
+Sample 1 - 70893 reads in 28613 unique sequences.
+Processing: C129 
+Sample 1 - 70928 reads in 33025 unique sequences.
+Sample 1 - 70928 reads in 29589 unique sequences.
+Processing: C130 
+Sample 1 - 61068 reads in 30262 unique sequences.
+Sample 1 - 61068 reads in 26522 unique sequences.
+Processing: C135 
+Sample 1 - 48637 reads in 19743 unique sequences.
+Sample 1 - 48637 reads in 18688 unique sequences.
+Processing: C136 
+Sample 1 - 58071 reads in 27287 unique sequences.
+Sample 1 - 58071 reads in 25037 unique sequences.
+Processing: C137 
+Sample 1 - 60392 reads in 28886 unique sequences.
+Sample 1 - 60392 reads in 25405 unique sequences.
+Processing: C138 
+Sample 1 - 60203 reads in 28362 unique sequences.
+Sample 1 - 60203 reads in 26777 unique sequences.
+Processing: C139 
+Sample 1 - 68678 reads in 32240 unique sequences.
+Sample 1 - 68678 reads in 29422 unique sequences.
+Processing: C140 
+Sample 1 - 57626 reads in 28108 unique sequences.
+Sample 1 - 57626 reads in 25222 unique sequences.
+Processing: C145 
+Sample 1 - 60561 reads in 28315 unique sequences.
+Sample 1 - 60561 reads in 25129 unique sequences.
+Processing: C146 
+Sample 1 - 59996 reads in 28456 unique sequences.
+Sample 1 - 59996 reads in 25164 unique sequences.
+Processing: C147 
+Sample 1 - 59210 reads in 28384 unique sequences.
+Sample 1 - 59210 reads in 25373 unique sequences.
+Processing: C148 
+Sample 1 - 66219 reads in 29611 unique sequences.
+Sample 1 - 66219 reads in 26851 unique sequences.
+Processing: C149 
+Sample 1 - 60611 reads in 28617 unique sequences.
+Sample 1 - 60611 reads in 25645 unique sequences.
+Processing: C150 
+Sample 1 - 59860 reads in 27426 unique sequences.
+Sample 1 - 59860 reads in 24602 unique sequences.
+Processing: C155 
+Sample 1 - 59737 reads in 28299 unique sequences.
+Sample 1 - 59737 reads in 25492 unique sequences.
+Processing: C156 
+Sample 1 - 59801 reads in 27134 unique sequences.
+Sample 1 - 59801 reads in 25734 unique sequences.
+Processing: C157 
+Sample 1 - 59101 reads in 27996 unique sequences.
+Sample 1 - 59101 reads in 24711 unique sequences.
+Processing: C158 
+Sample 1 - 58198 reads in 26277 unique sequences.
+Sample 1 - 58198 reads in 24708 unique sequences.
+Processing: C159 
+Sample 1 - 65949 reads in 30544 unique sequences.
+Sample 1 - 65949 reads in 28203 unique sequences.
+Processing: C160 
+Sample 1 - 57762 reads in 27291 unique sequences.
+Sample 1 - 57762 reads in 24008 unique sequences.
+Processing: C165 
+Sample 1 - 57690 reads in 26659 unique sequences.
+Sample 1 - 57690 reads in 24135 unique sequences.
+Processing: C166 
+Sample 1 - 61462 reads in 29815 unique sequences.
+Sample 1 - 61462 reads in 26685 unique sequences.
+Processing: C167 
+Sample 1 - 63217 reads in 25966 unique sequences.
+Sample 1 - 63217 reads in 21994 unique sequences.
+Processing: C168 
+Sample 1 - 61614 reads in 22658 unique sequences.
+Sample 1 - 61614 reads in 19214 unique sequences.
+Processing: C169 
+Sample 1 - 57467 reads in 20644 unique sequences.
+Sample 1 - 57467 reads in 17952 unique sequences.
+Processing: C170 
+Sample 1 - 64281 reads in 30470 unique sequences.
+Sample 1 - 64281 reads in 26142 unique sequences.
+Processing: C175 
+Sample 1 - 58611 reads in 27043 unique sequences.
+Sample 1 - 58611 reads in 23052 unique sequences.
+Processing: C176 
+Sample 1 - 58379 reads in 27984 unique sequences.
+Sample 1 - 58379 reads in 23691 unique sequences.
+Processing: C177 
+Sample 1 - 57741 reads in 28101 unique sequences.
+Sample 1 - 57741 reads in 24726 unique sequences.
+Processing: C178 
+Sample 1 - 56671 reads in 25944 unique sequences.
+Sample 1 - 56671 reads in 22107 unique sequences.
+Processing: C179 
+Sample 1 - 58306 reads in 26604 unique sequences.
+Sample 1 - 58306 reads in 23229 unique sequences.
+Processing: C180 
+Sample 1 - 58732 reads in 26574 unique sequences.
+Sample 1 - 58732 reads in 23129 unique sequences.
+Processing: C185 
+Sample 1 - 56159 reads in 25309 unique sequences.
+Sample 1 - 56159 reads in 22285 unique sequences.
+Processing: C186 
+Sample 1 - 56392 reads in 26308 unique sequences.
+Sample 1 - 56392 reads in 22886 unique sequences.
+Processing: C187 
+Sample 1 - 58227 reads in 27160 unique sequences.
+Sample 1 - 58227 reads in 23656 unique sequences.
+Processing: C188 
+Sample 1 - 58457 reads in 23907 unique sequences.
+Sample 1 - 58457 reads in 22081 unique sequences.
+Processing: C189 
+Sample 1 - 57830 reads in 25340 unique sequences.
+Sample 1 - 57830 reads in 23896 unique sequences.
+Processing: C190 
+Sample 1 - 57420 reads in 27201 unique sequences.
+Sample 1 - 57420 reads in 25440 unique sequences.
+Processing: C195 
+Sample 1 - 57061 reads in 25843 unique sequences.
+Sample 1 - 57061 reads in 23244 unique sequences.
+Processing: C196 
+Sample 1 - 55924 reads in 22908 unique sequences.
+Sample 1 - 55924 reads in 20487 unique sequences.
+Processing: C197 
+Sample 1 - 57896 reads in 26539 unique sequences.
+Sample 1 - 57896 reads in 24171 unique sequences.
+Processing: C198 
+Sample 1 - 55730 reads in 25642 unique sequences.
+Sample 1 - 55730 reads in 22974 unique sequences.
+Processing: C199 
+Sample 1 - 55961 reads in 29572 unique sequences.
+Sample 1 - 55961 reads in 25822 unique sequences.
+Processing: C200 
+Sample 1 - 56227 reads in 27704 unique sequences.
+Sample 1 - 56227 reads in 25455 unique sequences.
+Processing: C205 
+Sample 1 - 57985 reads in 29958 unique sequences.
+Sample 1 - 57985 reads in 25524 unique sequences.
+Processing: C206 
+Sample 1 - 56474 reads in 26311 unique sequences.
+Sample 1 - 56474 reads in 23927 unique sequences.
+Processing: C207 
+Sample 1 - 56313 reads in 27440 unique sequences.
+Sample 1 - 56313 reads in 24896 unique sequences.
+Processing: C208 
+Sample 1 - 62815 reads in 28105 unique sequences.
+Sample 1 - 62815 reads in 24417 unique sequences.
+Processing: C209 
+Sample 1 - 68802 reads in 25875 unique sequences.
+Sample 1 - 68802 reads in 23970 unique sequences.
+Processing: C210 
+Sample 1 - 59521 reads in 27118 unique sequences.
+Sample 1 - 59521 reads in 23891 unique sequences.
+Processing: C215 
+Sample 1 - 56072 reads in 26621 unique sequences.
+Sample 1 - 56072 reads in 24522 unique sequences.
+Processing: C216 
+Sample 1 - 59177 reads in 27953 unique sequences.
+Sample 1 - 59177 reads in 25637 unique sequences.
+Processing: C217 
+Sample 1 - 57889 reads in 25008 unique sequences.
+Sample 1 - 57889 reads in 23292 unique sequences.
+Processing: C218 
+Sample 1 - 58417 reads in 25576 unique sequences.
+Sample 1 - 58417 reads in 22694 unique sequences.
+Processing: C219 
+Sample 1 - 65942 reads in 29060 unique sequences.
+Sample 1 - 65942 reads in 25783 unique sequences.
+Processing: C220 
+Sample 1 - 59329 reads in 29834 unique sequences.
+Sample 1 - 59329 reads in 26850 unique sequences.
+Processing: C225 
+Sample 1 - 59951 reads in 30273 unique sequences.
+Sample 1 - 59951 reads in 26088 unique sequences.
+Processing: C226 
+Sample 1 - 58282 reads in 29622 unique sequences.
+Sample 1 - 58282 reads in 25596 unique sequences.
+Processing: C227 
+Sample 1 - 55586 reads in 25237 unique sequences.
+Sample 1 - 55586 reads in 21921 unique sequences.
+Processing: C228 
+Sample 1 - 58134 reads in 22949 unique sequences.
+Sample 1 - 58134 reads in 21224 unique sequences.
+Processing: C229 
+Sample 1 - 58465 reads in 27276 unique sequences.
+Sample 1 - 58465 reads in 23908 unique sequences.
+Processing: C230 
+Sample 1 - 71013 reads in 28735 unique sequences.
+Sample 1 - 71013 reads in 25368 unique sequences.
+Processing: C235 
+Sample 1 - 56503 reads in 25901 unique sequences.
+Sample 1 - 56503 reads in 22657 unique sequences.
+Processing: C236 
+Sample 1 - 63242 reads in 29664 unique sequences.
+Sample 1 - 63242 reads in 25998 unique sequences.
+Processing: C237 
+Sample 1 - 57691 reads in 18908 unique sequences.
+Sample 1 - 57691 reads in 17347 unique sequences.
+Processing: C238 
+Sample 1 - 58880 reads in 30249 unique sequences.
+Sample 1 - 58880 reads in 25918 unique sequences.
+Processing: C239 
+Sample 1 - 55904 reads in 28965 unique sequences.
+Sample 1 - 55904 reads in 26703 unique sequences.
+Processing: C240 
+Sample 1 - 58895 reads in 29074 unique sequences.
+Sample 1 - 58895 reads in 26914 unique sequences.
+Processing: C245 
+Sample 1 - 56355 reads in 28342 unique sequences.
+Sample 1 - 56355 reads in 25801 unique sequences.
+Processing: C246 
+Sample 1 - 62247 reads in 32179 unique sequences.
+Sample 1 - 62247 reads in 28882 unique sequences.
+Processing: C247 
+Sample 1 - 59592 reads in 26621 unique sequences.
+Sample 1 - 59592 reads in 23232 unique sequences.
+Processing: C248 
+Sample 1 - 55519 reads in 23197 unique sequences.
+Sample 1 - 55519 reads in 21217 unique sequences.
+Processing: C249 
+Sample 1 - 58900 reads in 26603 unique sequences.
+Sample 1 - 58900 reads in 23052 unique sequences.
+Processing: C250 
+Sample 1 - 58425 reads in 25642 unique sequences.
+Sample 1 - 58425 reads in 21808 unique sequences.
+Processing: C255 
+Sample 1 - 57278 reads in 28222 unique sequences.
+Sample 1 - 57278 reads in 24296 unique sequences.
+Processing: C256 
+Sample 1 - 58378 reads in 31374 unique sequences.
+Sample 1 - 58378 reads in 26772 unique sequences.
+Processing: C257 
+Sample 1 - 59056 reads in 28429 unique sequences.
+Sample 1 - 59056 reads in 24967 unique sequences.
+Processing: C258 
+Sample 1 - 59633 reads in 28194 unique sequences.
+Sample 1 - 59633 reads in 24231 unique sequences.
+Processing: C259 
+Sample 1 - 57124 reads in 25882 unique sequences.
+Sample 1 - 57124 reads in 22895 unique sequences.
+Processing: C260 
+Sample 1 - 56182 reads in 26843 unique sequences.
+Sample 1 - 56182 reads in 23430 unique sequences.
+Processing: C265 
+Sample 1 - 55818 reads in 26217 unique sequences.
+Sample 1 - 55818 reads in 24191 unique sequences.
+Processing: C266 
+Sample 1 - 59906 reads in 26259 unique sequences.
+Sample 1 - 59906 reads in 23586 unique sequences.
+Processing: C267 
+Sample 1 - 57637 reads in 26154 unique sequences.
+Sample 1 - 57637 reads in 23806 unique sequences.
+Processing: C268 
+Sample 1 - 57258 reads in 20410 unique sequences.
+Sample 1 - 57258 reads in 19393 unique sequences.
+Processing: C269 
+Sample 1 - 55825 reads in 24956 unique sequences.
+Sample 1 - 55825 reads in 22552 unique sequences.
+Processing: C270 
+Sample 1 - 58307 reads in 24241 unique sequences.
+Sample 1 - 58307 reads in 22288 unique sequences.
+Processing: C275 
+Sample 1 - 63939 reads in 29696 unique sequences.
+Sample 1 - 63939 reads in 26085 unique sequences.
+Processing: C276 
+Sample 1 - 56711 reads in 28509 unique sequences.
+Sample 1 - 56711 reads in 26251 unique sequences.
+Processing: C277 
+Sample 1 - 55998 reads in 26324 unique sequences.
+Sample 1 - 55998 reads in 23312 unique sequences.
+Processing: C278 
+Sample 1 - 69835 reads in 33179 unique sequences.
+Sample 1 - 69835 reads in 28122 unique sequences.
+Processing: C279 
+Sample 1 - 57187 reads in 24967 unique sequences.
+Sample 1 - 57187 reads in 23139 unique sequences.
+Processing: C285 
+Sample 1 - 63305 reads in 29706 unique sequences.
+Sample 1 - 63305 reads in 25891 unique sequences.
+Processing: C286 
+Sample 1 - 59793 reads in 22795 unique sequences.
+Sample 1 - 59793 reads in 21267 unique sequences.
+Processing: C287 
+Sample 1 - 56821 reads in 26301 unique sequences.
+Sample 1 - 56821 reads in 24296 unique sequences.
+Processing: C288 
+Sample 1 - 55240 reads in 27335 unique sequences.
+Sample 1 - 55240 reads in 23860 unique sequences.
+Processing: C289 
+Sample 1 - 70756 reads in 32055 unique sequences.
+Sample 1 - 70756 reads in 28379 unique sequences.
+Processing: C290 
+Sample 1 - 59540 reads in 24068 unique sequences.
+Sample 1 - 59540 reads in 22737 unique sequences.
+Processing: C295 
+Sample 1 - 69208 reads in 29701 unique sequences.
+Sample 1 - 69208 reads in 25506 unique sequences.
+Processing: C296 
+Sample 1 - 56898 reads in 22809 unique sequences.
+Sample 1 - 56898 reads in 22997 unique sequences.
+Processing: C297 
+Sample 1 - 58381 reads in 26562 unique sequences.
+Sample 1 - 58381 reads in 23728 unique sequences.
+Processing: C298 
+Sample 1 - 57487 reads in 24883 unique sequences.
+Sample 1 - 57487 reads in 22867 unique sequences.
+Processing: C299 
+Sample 1 - 67328 reads in 24436 unique sequences.
+Sample 1 - 67328 reads in 22863 unique sequences.
+Processing: C300 
+Sample 1 - 56771 reads in 25976 unique sequences.
+Sample 1 - 56771 reads in 23177 unique sequences.
+Processing: C305 
+Sample 1 - 59400 reads in 27803 unique sequences.
+Sample 1 - 59400 reads in 24953 unique sequences.
+Processing: C306 
+Sample 1 - 59435 reads in 28014 unique sequences.
+Sample 1 - 59435 reads in 25003 unique sequences.
+Processing: C307 
+Sample 1 - 57583 reads in 27721 unique sequences.
+Sample 1 - 57583 reads in 24152 unique sequences.
+Processing: C308 
+Sample 1 - 59677 reads in 26362 unique sequences.
+Sample 1 - 59677 reads in 23209 unique sequences.
+Processing: C309 
+Sample 1 - 55528 reads in 25270 unique sequences.
+Sample 1 - 55528 reads in 22424 unique sequences.
+Processing: C310 
+Sample 1 - 56361 reads in 21507 unique sequences.
+Sample 1 - 56361 reads in 20934 unique sequences.
+Processing: C315 
+Sample 1 - 59061 reads in 26141 unique sequences.
+Sample 1 - 59061 reads in 23300 unique sequences.
+Processing: C316 
+Sample 1 - 57616 reads in 28890 unique sequences.
+Sample 1 - 57616 reads in 26725 unique sequences.
+Processing: C317 
+Sample 1 - 59473 reads in 27875 unique sequences.
+Sample 1 - 59473 reads in 25553 unique sequences.
+Processing: C318 
+Sample 1 - 57383 reads in 18435 unique sequences.
+Sample 1 - 57383 reads in 16555 unique sequences.
+Processing: C319 
+Sample 1 - 57875 reads in 26601 unique sequences.
+Sample 1 - 57875 reads in 24561 unique sequences.
+Processing: C320 
+Sample 1 - 56497 reads in 24774 unique sequences.
+Sample 1 - 56497 reads in 22505 unique sequences.
+Processing: C323 
+Sample 1 - 57357 reads in 26402 unique sequences.
+Sample 1 - 57357 reads in 24306 unique sequences.
+Processing: C326 
+Sample 1 - 57803 reads in 33789 unique sequences.
+Sample 1 - 57803 reads in 29696 unique sequences.
+Processing: C327 
+Sample 1 - 59038 reads in 26987 unique sequences.
+Sample 1 - 59038 reads in 25936 unique sequences.
+Processing: C328 
+Sample 1 - 58830 reads in 28664 unique sequences.
+Sample 1 - 58830 reads in 26044 unique sequences.
+Processing: C329 
+Sample 1 - 62531 reads in 29449 unique sequences.
+Sample 1 - 62531 reads in 26717 unique sequences.
+Processing: C330 
+Sample 1 - 55873 reads in 26619 unique sequences.
+Sample 1 - 55873 reads in 24669 unique sequences.
+Processing: C335 
+Sample 1 - 58240 reads in 28841 unique sequences.
+Sample 1 - 58240 reads in 25096 unique sequences.
+Processing: C336 
+Sample 1 - 60213 reads in 28698 unique sequences.
+Sample 1 - 60213 reads in 25331 unique sequences.
+Processing: C337 
+Sample 1 - 60179 reads in 27915 unique sequences.
+Sample 1 - 60179 reads in 25383 unique sequences.
+Processing: C338 
+Sample 1 - 60207 reads in 28899 unique sequences.
+Sample 1 - 60207 reads in 25645 unique sequences.
+Processing: C339 
+Sample 1 - 71754 reads in 35505 unique sequences.
+Sample 1 - 71754 reads in 31459 unique sequences.
+Processing: C340 
+Sample 1 - 60941 reads in 28753 unique sequences.
+Sample 1 - 60941 reads in 25857 unique sequences.
+Processing: C345 
+Sample 1 - 66239 reads in 28258 unique sequences.
+Sample 1 - 66239 reads in 26898 unique sequences.
+Processing: C346 
+Sample 1 - 62215 reads in 26582 unique sequences.
+Sample 1 - 62215 reads in 25291 unique sequences.
+Processing: C347 
+Sample 1 - 59119 reads in 25382 unique sequences.
+Sample 1 - 59119 reads in 25435 unique sequences.
+Processing: C348 
+Sample 1 - 60841 reads in 23446 unique sequences.
+Sample 1 - 60841 reads in 24149 unique sequences.
+Processing: C349 
+Sample 1 - 59276 reads in 30171 unique sequences.
+Sample 1 - 59276 reads in 26852 unique sequences.
+Processing: C350 
+Sample 1 - 54190 reads in 24167 unique sequences.
+Sample 1 - 54190 reads in 22311 unique sequences.
+Processing: C355 
+Sample 1 - 44392 reads in 19670 unique sequences.
+Sample 1 - 44392 reads in 18836 unique sequences.
+Processing: C356 
+Sample 1 - 72296 reads in 35466 unique sequences.
+Sample 1 - 72296 reads in 31373 unique sequences.
+Processing: C357 
+Sample 1 - 59859 reads in 28306 unique sequences.
+Sample 1 - 59859 reads in 26042 unique sequences.
+Processing: C358 
+Sample 1 - 60741 reads in 27563 unique sequences.
+Sample 1 - 60741 reads in 26241 unique sequences.
+Processing: C359 
+Sample 1 - 61592 reads in 29266 unique sequences.
+Sample 1 - 61592 reads in 26192 unique sequences.
+Processing: C360 
+Sample 1 - 56766 reads in 26008 unique sequences.
+Sample 1 - 56766 reads in 23753 unique sequences.
+Processing: C365 
+Sample 1 - 62027 reads in 28131 unique sequences.
+Sample 1 - 62027 reads in 26699 unique sequences.
+Processing: C366 
+Sample 1 - 67967 reads in 31158 unique sequences.
+Sample 1 - 67967 reads in 28170 unique sequences.
+Processing: C367 
+Sample 1 - 60093 reads in 26631 unique sequences.
+Sample 1 - 60093 reads in 25207 unique sequences.
+Processing: C368 
+Sample 1 - 59869 reads in 26852 unique sequences.
+Sample 1 - 59869 reads in 24616 unique sequences.
+Processing: C369 
+Sample 1 - 59404 reads in 28369 unique sequences.
+Sample 1 - 59404 reads in 26639 unique sequences.
+Processing: C370 
+Sample 1 - 69780 reads in 29982 unique sequences.
+Sample 1 - 69780 reads in 29084 unique sequences.
+Processing: C375 
+Sample 1 - 44957 reads in 17228 unique sequences.
+Sample 1 - 44957 reads in 19504 unique sequences.
+Processing: C376 
+Sample 1 - 61218 reads in 27865 unique sequences.
+Sample 1 - 61218 reads in 25062 unique sequences.
+Processing: C377 
+Sample 1 - 58239 reads in 24046 unique sequences.
+Sample 1 - 58239 reads in 22785 unique sequences.
+Processing: C378 
+Sample 1 - 62364 reads in 28152 unique sequences.
+Sample 1 - 62364 reads in 26903 unique sequences.
+Processing: C379 
+Sample 1 - 60418 reads in 29893 unique sequences.
+Sample 1 - 60418 reads in 26896 unique sequences.
+Processing: C380 
+Sample 1 - 61824 reads in 30388 unique sequences.
+Sample 1 - 61824 reads in 27433 unique sequences.
+Processing: C385 
+Sample 1 - 59486 reads in 27797 unique sequences.
+Sample 1 - 59486 reads in 24773 unique sequences.
+Processing: C386 
+Sample 1 - 62007 reads in 25930 unique sequences.
+Sample 1 - 62007 reads in 24885 unique sequences.
+Processing: C387 
+Sample 1 - 59730 reads in 25866 unique sequences.
+Sample 1 - 59730 reads in 23877 unique sequences.
+Processing: C388 
+Sample 1 - 59447 reads in 25778 unique sequences.
+Sample 1 - 59447 reads in 23298 unique sequences.
+Processing: C389 
+Sample 1 - 59136 reads in 30622 unique sequences.
+Sample 1 - 59136 reads in 26560 unique sequences.
+Processing: C390 
+Sample 1 - 58010 reads in 28121 unique sequences.
+Sample 1 - 58010 reads in 25457 unique sequences.
+Processing: C395 
+Sample 1 - 57722 reads in 22328 unique sequences.
+Sample 1 - 57722 reads in 21091 unique sequences.
+Processing: C396 
+Sample 1 - 68022 reads in 29422 unique sequences.
+Sample 1 - 68022 reads in 27164 unique sequences.
+Processing: C397 
+Sample 1 - 69620 reads in 31118 unique sequences.
+Sample 1 - 69620 reads in 29829 unique sequences.
+Processing: C398 
+Sample 1 - 67085 reads in 31342 unique sequences.
+Sample 1 - 67085 reads in 29465 unique sequences.
+Processing: C399 
+Sample 1 - 60252 reads in 30081 unique sequences.
+Sample 1 - 60252 reads in 27769 unique sequences.
+Processing: C400 
+Sample 1 - 59995 reads in 30439 unique sequences.
+Sample 1 - 59995 reads in 27553 unique sequences.
+Processing: C405 
+Sample 1 - 68592 reads in 32725 unique sequences.
+Sample 1 - 68592 reads in 28505 unique sequences.
+Processing: C406 
+Sample 1 - 58561 reads in 24367 unique sequences.
+Sample 1 - 58561 reads in 23144 unique sequences.
+Processing: C407 
+Sample 1 - 59571 reads in 26665 unique sequences.
+Sample 1 - 59571 reads in 24384 unique sequences.
+Processing: C408 
+Sample 1 - 58630 reads in 26765 unique sequences.
+Sample 1 - 58630 reads in 24093 unique sequences.
+Processing: C409 
+Sample 1 - 63496 reads in 31314 unique sequences.
+Sample 1 - 63496 reads in 28459 unique sequences.
+Processing: C410 
+Sample 1 - 59188 reads in 26961 unique sequences.
+Sample 1 - 59188 reads in 24504 unique sequences.
+Processing: C415 
+Sample 1 - 59594 reads in 29848 unique sequences.
+Sample 1 - 59594 reads in 26440 unique sequences.
+Processing: C416 
+Sample 1 - 58006 reads in 27544 unique sequences.
+Sample 1 - 58006 reads in 24893 unique sequences.
+Processing: C417 
+Sample 1 - 59480 reads in 27063 unique sequences.
+Sample 1 - 59480 reads in 24975 unique sequences.
+Processing: C418 
+Sample 1 - 58157 reads in 28354 unique sequences.
+Sample 1 - 58157 reads in 25301 unique sequences.
+Processing: C419 
+Sample 1 - 58177 reads in 29322 unique sequences.
+Sample 1 - 58177 reads in 27151 unique sequences.
+Processing: C420 
+Sample 1 - 63908 reads in 31102 unique sequences.
+Sample 1 - 63908 reads in 28457 unique sequences.
+Processing: C425 
+Sample 1 - 58706 reads in 25027 unique sequences.
+Sample 1 - 58706 reads in 24632 unique sequences.
+Processing: C426 
+Sample 1 - 60634 reads in 21982 unique sequences.
+Sample 1 - 60634 reads in 21219 unique sequences.
+Processing: C427 
+Sample 1 - 57208 reads in 23114 unique sequences.
+Sample 1 - 57208 reads in 22129 unique sequences.
+Processing: C428 
+Sample 1 - 57972 reads in 24070 unique sequences.
+Sample 1 - 57972 reads in 23986 unique sequences.
+Processing: C429 
+Sample 1 - 36894 reads in 18745 unique sequences.
+Sample 1 - 36894 reads in 17123 unique sequences.
+Processing: C430 
+Sample 1 - 59464 reads in 27394 unique sequences.
+Sample 1 - 59464 reads in 26744 unique sequences.
+Processing: C435 
+Sample 1 - 69497 reads in 32723 unique sequences.
+Sample 1 - 69497 reads in 29899 unique sequences.
+Processing: C436 
+Sample 1 - 56793 reads in 26996 unique sequences.
+Sample 1 - 56793 reads in 24398 unique sequences.
+Processing: C437 
+Sample 1 - 61104 reads in 27804 unique sequences.
+Sample 1 - 61104 reads in 26930 unique sequences.
+Processing: C438 
+Sample 1 - 58175 reads in 27399 unique sequences.
+Sample 1 - 58175 reads in 25859 unique sequences.
+Processing: C439 
+Sample 1 - 91285 reads in 42353 unique sequences.
+Sample 1 - 91285 reads in 38892 unique sequences.
+Processing: C440 
+Sample 1 - 59909 reads in 27937 unique sequences.
+Sample 1 - 59909 reads in 26907 unique sequences.
+Processing: C444 
+Sample 1 - 46394 reads in 22197 unique sequences.
+Sample 1 - 46394 reads in 20709 unique sequences.
+Processing: C445 
+Sample 1 - 58453 reads in 27530 unique sequences.
+Sample 1 - 58453 reads in 25028 unique sequences.
+Processing: C447 
+Sample 1 - 56461 reads in 22986 unique sequences.
+Sample 1 - 56461 reads in 22637 unique sequences.
+Processing: C448 
+Sample 1 - 56187 reads in 24960 unique sequences.
+Sample 1 - 56187 reads in 23058 unique sequences.
+Processing: C449 
+Sample 1 - 59114 reads in 26062 unique sequences.
+Sample 1 - 59114 reads in 25854 unique sequences.
+Processing: C450 
+Sample 1 - 58730 reads in 26871 unique sequences.
+Sample 1 - 58730 reads in 25255 unique sequences.
+Processing: C455 
+Sample 1 - 57118 reads in 28761 unique sequences.
+Sample 1 - 57118 reads in 26163 unique sequences.
+Processing: C456 
+Sample 1 - 56938 reads in 25630 unique sequences.
+Sample 1 - 56938 reads in 24446 unique sequences.
+Processing: C457 
+Sample 1 - 57905 reads in 25850 unique sequences.
+Sample 1 - 57905 reads in 24361 unique sequences.
+Processing: C458 
+Sample 1 - 57476 reads in 27151 unique sequences.
+Sample 1 - 57476 reads in 25550 unique sequences.
+Processing: C459 
+Sample 1 - 59956 reads in 28836 unique sequences.
+Sample 1 - 59956 reads in 26430 unique sequences.
+Processing: C460 
+Sample 1 - 58958 reads in 29500 unique sequences.
+Sample 1 - 58958 reads in 26133 unique sequences.
+Processing: C462 
+Sample 1 - 65974 reads in 30925 unique sequences.
+Sample 1 - 65974 reads in 27944 unique sequences.
+Processing: C465 
+Sample 1 - 70676 reads in 30403 unique sequences.
+Sample 1 - 70676 reads in 28735 unique sequences.
+Processing: C466 
+Sample 1 - 57257 reads in 27635 unique sequences.
+Sample 1 - 57257 reads in 26795 unique sequences.
+Processing: C467 
+Sample 1 - 66331 reads in 27052 unique sequences.
+Sample 1 - 66331 reads in 26404 unique sequences.
+Processing: C468 
+Sample 1 - 55951 reads in 24722 unique sequences.
+Sample 1 - 55951 reads in 24286 unique sequences.
+Processing: C470 
+Sample 1 - 51162 reads in 25667 unique sequences.
+Sample 1 - 51162 reads in 24001 unique sequences.
+Processing: C475 
+Sample 1 - 58368 reads in 24836 unique sequences.
+Sample 1 - 58368 reads in 24061 unique sequences.
+Processing: C476 
+Sample 1 - 58467 reads in 26621 unique sequences.
+Sample 1 - 58467 reads in 25466 unique sequences.
+Processing: C477 
+Sample 1 - 57397 reads in 27493 unique sequences.
+Sample 1 - 57397 reads in 25662 unique sequences.
+Processing: C478 
+Sample 1 - 27458 reads in 15286 unique sequences.
+Sample 1 - 27458 reads in 13874 unique sequences.
+Processing: C479 
+Sample 1 - 59561 reads in 32227 unique sequences.
+Sample 1 - 59561 reads in 28380 unique sequences.
+Processing: C480 
+Sample 1 - 68599 reads in 35519 unique sequences.
+Sample 1 - 68599 reads in 31816 unique sequences.
+Processing: CE33 
+Sample 1 - 56365 reads in 30408 unique sequences.
+Sample 1 - 56365 reads in 27731 unique sequences.
+Processing: CTRL1 
+Sample 1 - 60208 reads in 32231 unique sequences.
+Sample 1 - 60208 reads in 28034 unique sequences.
+Processing: CTRL10 
+Sample 1 - 57003 reads in 29846 unique sequences.
+Sample 1 - 57003 reads in 25997 unique sequences.
+Processing: CTRL2 
+Sample 1 - 59795 reads in 31880 unique sequences.
+Sample 1 - 59795 reads in 27659 unique sequences.
+Processing: CTRL3 
+Sample 1 - 57582 reads in 30420 unique sequences.
+Sample 1 - 57582 reads in 26522 unique sequences.
+Processing: CTRL4 
+Sample 1 - 65823 reads in 33208 unique sequences.
+Sample 1 - 65823 reads in 29242 unique sequences.
+Processing: CTRL5 
+Sample 1 - 55727 reads in 28585 unique sequences.
+Sample 1 - 55727 reads in 25441 unique sequences.
+Processing: CTRL6 
+Sample 1 - 59101 reads in 32698 unique sequences.
+Sample 1 - 59101 reads in 28805 unique sequences.
+Processing: CTRL7 
+Sample 1 - 57308 reads in 30969 unique sequences.
+Sample 1 - 57308 reads in 27853 unique sequences.
+Processing: CTRL8 
+Sample 1 - 55938 reads in 31059 unique sequences.
+Sample 1 - 55938 reads in 28180 unique sequences.
+Processing: CTRL9 
+Sample 1 - 56721 reads in 29300 unique sequences.
+Sample 1 - 56721 reads in 26401 unique sequences.
+Processing: F005 
+Sample 1 - 83054 reads in 43208 unique sequences.
+Sample 1 - 83054 reads in 39861 unique sequences.
+Processing: F006 
+Sample 1 - 56679 reads in 27540 unique sequences.
+Sample 1 - 56679 reads in 26360 unique sequences.
+Processing: F007 
+Sample 1 - 62026 reads in 32311 unique sequences.
+Sample 1 - 62026 reads in 29115 unique sequences.
+Processing: F008 
+Sample 1 - 45747 reads in 24906 unique sequences.
+Sample 1 - 45747 reads in 21620 unique sequences.
+Processing: F009 
+Sample 1 - 70769 reads in 34841 unique sequences.
+Sample 1 - 70769 reads in 32162 unique sequences.
+Processing: F010 
+Sample 1 - 68580 reads in 34673 unique sequences.
+Sample 1 - 68580 reads in 31275 unique sequences.
+Processing: F015 
+Sample 1 - 60247 reads in 32189 unique sequences.
+Sample 1 - 60247 reads in 28802 unique sequences.
+Processing: F016 
+Sample 1 - 55707 reads in 28786 unique sequences.
+Sample 1 - 55707 reads in 27065 unique sequences.
+Processing: F017 
+Sample 1 - 56905 reads in 30227 unique sequences.
+Sample 1 - 56905 reads in 27090 unique sequences.
+Processing: F018 
+Sample 1 - 57870 reads in 30073 unique sequences.
+Sample 1 - 57870 reads in 27155 unique sequences.
+Processing: F019 
+Sample 1 - 41864 reads in 20596 unique sequences.
+Sample 1 - 41864 reads in 19561 unique sequences.
+Processing: F020 
+Sample 1 - 80651 reads in 38563 unique sequences.
+Sample 1 - 80651 reads in 33735 unique sequences.
+Processing: F025 
+Sample 1 - 56376 reads in 28729 unique sequences.
+Sample 1 - 56376 reads in 26121 unique sequences.
+Processing: F026 
+Sample 1 - 56999 reads in 28598 unique sequences.
+Sample 1 - 56999 reads in 25572 unique sequences.
+Processing: F027 
+Sample 1 - 57132 reads in 29836 unique sequences.
+Sample 1 - 57132 reads in 27599 unique sequences.
+Processing: F029 
+Sample 1 - 56590 reads in 28957 unique sequences.
+Sample 1 - 56590 reads in 26793 unique sequences.
+Processing: F030 
+Sample 1 - 55529 reads in 28259 unique sequences.
+Sample 1 - 55529 reads in 26696 unique sequences.
+Processing: F035 
+Sample 1 - 57276 reads in 28919 unique sequences.
+Sample 1 - 57276 reads in 26137 unique sequences.
+Processing: F036 
+Sample 1 - 57356 reads in 30099 unique sequences.
+Sample 1 - 57356 reads in 27641 unique sequences.
+Processing: F037 
+Sample 1 - 57779 reads in 31851 unique sequences.
+Sample 1 - 57779 reads in 29140 unique sequences.
+Processing: F038 
+Sample 1 - 72134 reads in 38360 unique sequences.
+Sample 1 - 72134 reads in 34364 unique sequences.
+Processing: F039 
+Sample 1 - 55615 reads in 29418 unique sequences.
+Sample 1 - 55615 reads in 26839 unique sequences.
+Processing: F040 
+Sample 1 - 72870 reads in 37790 unique sequences.
+Sample 1 - 72870 reads in 33285 unique sequences.
+Processing: F085 
+Sample 1 - 73331 reads in 37176 unique sequences.
+Sample 1 - 73331 reads in 32582 unique sequences.
+Processing: F086 
+Sample 1 - 41934 reads in 22134 unique sequences.
+Sample 1 - 41934 reads in 19953 unique sequences.
+Processing: F087 
+Sample 1 - 59043 reads in 27943 unique sequences.
+Sample 1 - 59043 reads in 25450 unique sequences.
+Processing: F088 
+Sample 1 - 41380 reads in 22542 unique sequences.
+Sample 1 - 41380 reads in 19830 unique sequences.
+Processing: F089 
+Sample 1 - 58863 reads in 30863 unique sequences.
+Sample 1 - 58863 reads in 27557 unique sequences.
+Processing: F090 
+Sample 1 - 32609 reads in 16224 unique sequences.
+Sample 1 - 32609 reads in 14973 unique sequences.
+Processing: F095 
+Sample 1 - 61629 reads in 31205 unique sequences.
+Sample 1 - 61629 reads in 27813 unique sequences.
+Processing: F096 
+Sample 1 - 55809 reads in 29515 unique sequences.
+Sample 1 - 55809 reads in 27551 unique sequences.
+Processing: F097 
+Sample 1 - 59450 reads in 31348 unique sequences.
+Sample 1 - 59450 reads in 29350 unique sequences.
+Processing: F098 
+Sample 1 - 57447 reads in 32104 unique sequences.
+Sample 1 - 57447 reads in 29614 unique sequences.
+Processing: F099 
+Sample 1 - 56978 reads in 30763 unique sequences.
+Sample 1 - 56978 reads in 28299 unique sequences.
+Processing: F100 
+Sample 1 - 57193 reads in 28013 unique sequences.
+Sample 1 - 57193 reads in 24578 unique sequences.
+Processing: F105 
+Sample 1 - 55792 reads in 25445 unique sequences.
+Sample 1 - 55792 reads in 23829 unique sequences.
+Processing: F106 
+Sample 1 - 56895 reads in 27045 unique sequences.
+Sample 1 - 56895 reads in 24528 unique sequences.
+Processing: F107 
+Sample 1 - 57547 reads in 29219 unique sequences.
+Sample 1 - 57547 reads in 25861 unique sequences.
+Processing: F108 
+Sample 1 - 56010 reads in 31034 unique sequences.
+Sample 1 - 56010 reads in 28008 unique sequences.
+Processing: F109 
+Sample 1 - 56399 reads in 29058 unique sequences.
+Sample 1 - 56399 reads in 25618 unique sequences.
+Processing: F110 
+Sample 1 - 57355 reads in 29297 unique sequences.
+Sample 1 - 57355 reads in 26591 unique sequences.
+Processing: F115 
+Sample 1 - 63599 reads in 32008 unique sequences.
+Sample 1 - 63599 reads in 28444 unique sequences.
+Processing: F116 
+Sample 1 - 58817 reads in 30427 unique sequences.
+Sample 1 - 58817 reads in 27202 unique sequences.
+Processing: F117 
+Sample 1 - 60474 reads in 30395 unique sequences.
+Sample 1 - 60474 reads in 26473 unique sequences.
+Processing: F118 
+Sample 1 - 65271 reads in 33627 unique sequences.
+Sample 1 - 65271 reads in 30945 unique sequences.
+Processing: F119 
+Sample 1 - 57954 reads in 30169 unique sequences.
+Sample 1 - 57954 reads in 27169 unique sequences.
+Processing: F120 
+Sample 1 - 59065 reads in 29454 unique sequences.
+Sample 1 - 59065 reads in 26606 unique sequences.
+Processing: F175 
+Sample 1 - 48637 reads in 24911 unique sequences.
+Sample 1 - 48637 reads in 21198 unique sequences.
+Processing: F176 
+Sample 1 - 58795 reads in 28640 unique sequences.
+Sample 1 - 58795 reads in 25946 unique sequences.
+Processing: F177 
+Sample 1 - 59074 reads in 28040 unique sequences.
+Sample 1 - 59074 reads in 25537 unique sequences.
+Processing: F178 
+Sample 1 - 32661 reads in 17855 unique sequences.
+Sample 1 - 32661 reads in 15955 unique sequences.
+Processing: F179 
+Sample 1 - 58962 reads in 29472 unique sequences.
+Sample 1 - 58962 reads in 27582 unique sequences.
+Processing: F180 
+Sample 1 - 60508 reads in 29010 unique sequences.
+Sample 1 - 60508 reads in 25675 unique sequences.
+Processing: F193 
+Sample 1 - 61993 reads in 31209 unique sequences.
+Sample 1 - 61993 reads in 27585 unique sequences.
+Processing: F194 
+Sample 1 - 61424 reads in 31838 unique sequences.
+Sample 1 - 61424 reads in 28546 unique sequences.
+Processing: F195 
+Sample 1 - 60952 reads in 32920 unique sequences.
+Sample 1 - 60952 reads in 28865 unique sequences.
+Processing: F197 
+Sample 1 - 59543 reads in 29307 unique sequences.
+Sample 1 - 59543 reads in 26372 unique sequences.
+Processing: F199 
+Sample 1 - 61055 reads in 33093 unique sequences.
+Sample 1 - 61055 reads in 29923 unique sequences.
+Processing: F200 
+Sample 1 - 48650 reads in 26385 unique sequences.
+Sample 1 - 48650 reads in 23690 unique sequences.
+Processing: F371 
+Sample 1 - 28136 reads in 15149 unique sequences.
+Sample 1 - 28136 reads in 13786 unique sequences.
+Processing: F372 
+Sample 1 - 58975 reads in 27903 unique sequences.
+Sample 1 - 58975 reads in 25541 unique sequences.
+Processing: F373 
+Sample 1 - 60971 reads in 30810 unique sequences.
+Sample 1 - 60971 reads in 26177 unique sequences.
+Processing: F374 
+Sample 1 - 59933 reads in 30695 unique sequences.
+Sample 1 - 59933 reads in 29141 unique sequences.
+Processing: F375 
+Sample 1 - 73052 reads in 35251 unique sequences.
+Sample 1 - 73052 reads in 31537 unique sequences.
+Processing: F376 
+Sample 1 - 60009 reads in 32454 unique sequences.
+Sample 1 - 60009 reads in 29138 unique sequences.
+Processing: F377 
+Sample 1 - 61252 reads in 31783 unique sequences.
+Sample 1 - 61252 reads in 28403 unique sequences.
+Processing: F378 
+Sample 1 - 59451 reads in 30674 unique sequences.
+Sample 1 - 59451 reads in 27716 unique sequences.
+Processing: F379 
+Sample 1 - 65895 reads in 34279 unique sequences.
+Sample 1 - 65895 reads in 30200 unique sequences.
+Processing: F380 
+Sample 1 - 59274 reads in 29870 unique sequences.
+Sample 1 - 59274 reads in 26556 unique sequences.
+Processing: F391 
+Sample 1 - 61643 reads in 32523 unique sequences.
+Sample 1 - 61643 reads in 28510 unique sequences.
+Processing: F392 
+Sample 1 - 36254 reads in 19089 unique sequences.
+Sample 1 - 36254 reads in 16968 unique sequences.
+Processing: F393 
+Sample 1 - 57941 reads in 29539 unique sequences.
+Sample 1 - 57941 reads in 26497 unique sequences.
+Processing: F394 
+Sample 1 - 71366 reads in 34145 unique sequences.
+Sample 1 - 71366 reads in 31631 unique sequences.
+Processing: F395 
+Sample 1 - 61800 reads in 31569 unique sequences.
+Sample 1 - 61800 reads in 27396 unique sequences.
+Processing: F396 
+Sample 1 - 60676 reads in 29445 unique sequences.
+Sample 1 - 60676 reads in 27871 unique sequences.
+Processing: F397 
+Sample 1 - 56864 reads in 28728 unique sequences.
+Sample 1 - 56864 reads in 26890 unique sequences.
+Processing: F398 
+Sample 1 - 74109 reads in 36824 unique sequences.
+Sample 1 - 74109 reads in 31952 unique sequences.
+Processing: F399 
+Sample 1 - 60537 reads in 30987 unique sequences.
+Sample 1 - 60537 reads in 27827 unique sequences.
+Processing: F400 
+Sample 1 - 57780 reads in 28723 unique sequences.
+Sample 1 - 57780 reads in 25305 unique sequences.
+Processing: F455 
+Sample 1 - 69366 reads in 33474 unique sequences.
+Sample 1 - 69366 reads in 28392 unique sequences.
+Processing: F456 
+Sample 1 - 57817 reads in 29809 unique sequences.
+Sample 1 - 57817 reads in 24517 unique sequences.
+Processing: F457 
+Sample 1 - 60049 reads in 29530 unique sequences.
+Sample 1 - 60049 reads in 25521 unique sequences.
+Processing: F458 
+Sample 1 - 60108 reads in 29648 unique sequences.
+Sample 1 - 60108 reads in 25292 unique sequences.
+Processing: F459 
+Sample 1 - 67047 reads in 33480 unique sequences.
+Sample 1 - 67047 reads in 27314 unique sequences.
+Processing: F460 
+Sample 1 - 61580 reads in 32633 unique sequences.
+Sample 1 - 61580 reads in 26663 unique sequences.
+Processing: F475 
+Sample 1 - 59104 reads in 29314 unique sequences.
+Sample 1 - 59104 reads in 24578 unique sequences.
+Processing: F476 
+Sample 1 - 67858 reads in 33007 unique sequences.
+Sample 1 - 67858 reads in 27047 unique sequences.
+Processing: F477 
+Sample 1 - 61098 reads in 30565 unique sequences.
+Sample 1 - 61098 reads in 25671 unique sequences.
+Processing: F478 
+Sample 1 - 59770 reads in 31009 unique sequences.
+Sample 1 - 59770 reads in 25778 unique sequences.
+Processing: F479 
+Sample 1 - 58709 reads in 28363 unique sequences.
+Sample 1 - 58709 reads in 24112 unique sequences.
+Processing: F522 
+Sample 1 - 58122 reads in 28811 unique sequences.
+Sample 1 - 58122 reads in 24156 unique sequences.
+Processing: F523 
+Sample 1 - 58372 reads in 30158 unique sequences.
+Sample 1 - 58372 reads in 25642 unique sequences.
+Processing: F524 
+Sample 1 - 58347 reads in 26899 unique sequences.
+Sample 1 - 58347 reads in 23234 unique sequences.
+Processing: F525 
+Sample 1 - 60391 reads in 27813 unique sequences.
+Sample 1 - 60391 reads in 25068 unique sequences.
+Processing: F526 
+Sample 1 - 72430 reads in 32776 unique sequences.
+Sample 1 - 72430 reads in 30757 unique sequences.
+Processing: F527 
+Sample 1 - 57450 reads in 29832 unique sequences.
+Sample 1 - 57450 reads in 24773 unique sequences.
+Processing: F528 
+Sample 1 - 58841 reads in 28879 unique sequences.
+Sample 1 - 58841 reads in 24193 unique sequences.
+Processing: F529 
+Sample 1 - 59763 reads in 28068 unique sequences.
+Sample 1 - 59763 reads in 24913 unique sequences.
+Processing: F530 
+Sample 1 - 59168 reads in 27456 unique sequences.
+Sample 1 - 59168 reads in 23011 unique sequences.
+Processing: F532 
+Sample 1 - 61084 reads in 29322 unique sequences.
+Sample 1 - 61084 reads in 25749 unique sequences.
+Processing: F533 
+Sample 1 - 61698 reads in 30927 unique sequences.
+Sample 1 - 61698 reads in 27871 unique sequences.
+Processing: F534 
+Sample 1 - 59598 reads in 30385 unique sequences.
+Sample 1 - 59598 reads in 25648 unique sequences.
+Processing: F536 
+Sample 1 - 62516 reads in 29129 unique sequences.
+Sample 1 - 62516 reads in 25854 unique sequences.
+Processing: F538 
+Sample 1 - 73701 reads in 23291 unique sequences.
+Sample 1 - 73701 reads in 23052 unique sequences.
+Processing: F539 
+Sample 1 - 72502 reads in 33714 unique sequences.
+Sample 1 - 72502 reads in 28155 unique sequences.
+Processing: F540 
+Sample 1 - 59314 reads in 25329 unique sequences.
+Sample 1 - 59314 reads in 22586 unique sequences.
+Processing: FE104 
+Sample 1 - 61620 reads in 30133 unique sequences.
+Sample 1 - 61620 reads in 26009 unique sequences.
+Processing: FE98 
+Sample 1 - 60106 reads in 27608 unique sequences.
+Sample 1 - 60106 reads in 23884 unique sequences.
+[1] "finished"
