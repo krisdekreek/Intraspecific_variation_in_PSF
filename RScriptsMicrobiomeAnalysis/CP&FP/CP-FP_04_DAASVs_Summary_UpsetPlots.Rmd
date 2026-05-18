@@ -1,0 +1,344 @@
+---
+title: "CP&FP_05_differential_abundance_Summary_Results - Upset plots"
+author: "Kris de Kreek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+This script is adapted from a script form Melissa Uribe Acosta. Extra input comes from a script of Pedro Beschore da Costa.   
+   
+   
+Tutorials   
+- [Heatmap for final plot](http://rstudio-pubs-static.s3.amazonaws.com/288398_185f2889a5f641c6b9aa7b14fa15b634.html)
+   
+   
+# 4.0 load libraries, improve memory use and subset objects for the desired treatment comparisons
+### Load libraries
+```{r, warning = FALSE, message=FALSE}
+R.version$version.string # prints R version
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(UpSetR)
+packageVersion("UpSetR")
+library(ggVennDiagram)
+packageVersion("ggVennDiagram")
+```
+
+
+# 4.1 Comparing CP and FP at ASV level
+## One test
+### Load data
+```{r}
+# CP
+## Acc ASVs detected by at least one test
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_NoDup_DA_ASV.RData")
+Acc_Bac_NoDup_DA_ASV_CP <- Acc_Bac_NoDup_DA_ASV
+rm(Acc_Bac_NoDup_DA_ASV)
+
+## Dom data ASVs detected by at least one test
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Dom_Bac_NoDup_DA_ASV.RData")
+Dom_Bac_NoDup_DA_ASV_CP <- Dom_Bac_NoDup_DA_ASV
+rm(Dom_Bac_NoDup_DA_ASV)
+
+## All data ASVs detected by at least one test
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_NoDup_DA_ASV.RData")
+All_Bac_NoDup_DA_ASV_CP <- All_Bac_NoDup_DA_ASV
+rm(All_Bac_NoDup_DA_ASV)
+
+# FP
+## Acc ASVs detected by at least one test
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_NoDup_DA_ASV.RData")
+Acc_Bac_NoDup_DA_ASV_FP <- Acc_Bac_NoDup_DA_ASV
+rm(Acc_Bac_NoDup_DA_ASV)
+
+## All data ASVs detected by at least one test
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_NoDup_DA_ASV.RData")
+All_Bac_NoDup_DA_ASV_FP <- All_Bac_NoDup_DA_ASV
+rm(All_Bac_NoDup_DA_ASV)
+```
+
+### Upset plots
+#### All accessions one test
+```{r, fig.hight = 12}
+Acc_CP_FP <- c(CP = Acc_Bac_NoDup_DA_ASV_CP, FP = Acc_Bac_NoDup_DA_ASV_FP)
+upset(fromList(Acc_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### Per accession one test
+```{r}
+VL_CP_FP <- list(CP_VL = Acc_Bac_NoDup_DA_ASV_CP$VL, FP_VL = Acc_Bac_NoDup_DA_ASV_FP$VL)
+upset(fromList(VL_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+CD_CP_FP <- list(CP_CD = Acc_Bac_NoDup_DA_ASV_CP$CD, FP_CD = Acc_Bac_NoDup_DA_ASV_FP$CD)
+upset(fromList(CD_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+RI_CP_FP <- list(CP_RI = Acc_Bac_NoDup_DA_ASV_CP$RI, FP_RI = Acc_Bac_NoDup_DA_ASV_FP$RI)
+upset(fromList(RI_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+HM_CP_FP <- list(CP_HM = Acc_Bac_NoDup_DA_ASV_CP$HM, FP_HM = Acc_Bac_NoDup_DA_ASV_FP$HM)
+upset(fromList(HM_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+GO1_CP_FP <- list(CP_GO1 = Acc_Bac_NoDup_DA_ASV_CP$GO1, FP_GO1 = Acc_Bac_NoDup_DA_ASV_FP$GO1)
+upset(fromList(GO1_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### All data one test
+```{r}
+All_CP_FP <- list(CP = All_Bac_NoDup_DA_ASV_CP, FP = All_Bac_NoDup_DA_ASV_FP)
+upset(fromList(All_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### All and domestication data one test
+```{r}
+All_Dom_CP_FP <- c(list(CP_All = All_Bac_NoDup_DA_ASV_CP, FP_All = All_Bac_NoDup_DA_ASV_FP), CP_dom = Dom_Bac_NoDup_DA_ASV_CP)
+upset(fromList(All_Dom_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### All DA ASVs together
+```{r}
+Acc_Bac_NoDup_DA_ASV_CP <- unlist(unique(Acc_Bac_NoDup_DA_ASV_CP))
+Acc_Bac_NoDup_DA_ASV_FP <- unlist(unique(Acc_Bac_NoDup_DA_ASV_FP))
+Dom_Bac_NoDup_DA_ASV_CP <- unlist(unique(Dom_Bac_NoDup_DA_ASV_CP))
+Acc_Dom_All_CP_FP <- list(Acc_CP = Acc_Bac_NoDup_DA_ASV_CP, Acc_FP = Acc_Bac_NoDup_DA_ASV_FP, All_CP = All_Bac_NoDup_DA_ASV_CP, All_FP = All_Bac_NoDup_DA_ASV_FP, Dom_CP = Dom_Bac_NoDup_DA_ASV_CP)
+upset(fromList(Acc_Dom_All_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+## Two tests
+### Load data
+```{r}
+# CP
+## Acc ASVs detected by at least two tests
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+Acc_Bac_TwoTimes_DA_ASV_CP <- Acc_Bac_TwoTimes_DA_ASV
+rm(Acc_Bac_TwoTimes_DA_ASV)
+
+## Dom data ASVs detected by at least two tests
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Dom_Bac_TwoTimes_DA_ASV.RData")
+Dom_Bac_TwoTimes_DA_ASV_CP <- Dom_Bac_TwoTimes_DA_ASV
+rm(Dom_Bac_TwoTimes_DA_ASV)
+
+## All data ASVs detected by at least two tests
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_TwoTimes_DA_ASV.RData")
+All_Bac_TwoTimes_DA_ASV_CP <- All_Bac_TwoTimes_DA_ASV
+rm(All_Bac_TwoTimes_DA_ASV)
+
+# FP
+## Acc ASVs detected by at least two tests
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+Acc_Bac_TwoTimes_DA_ASV_FP <- Acc_Bac_TwoTimes_DA_ASV
+rm(Acc_Bac_TwoTimes_DA_ASV)
+
+## All data ASVs detected by at least two tests
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_TwoTimes_DA_ASV.RData")
+All_Bac_TwoTimes_DA_ASV_FP <- All_Bac_TwoTimes_DA_ASV
+rm(All_Bac_TwoTimes_DA_ASV)
+```
+
+### Upset plots
+#### All accessions two tests
+```{r, fig.hight = 12}
+Acc_CP_FP <- c(CP = Acc_Bac_TwoTimes_DA_ASV_CP, FP = Acc_Bac_TwoTimes_DA_ASV_FP)
+upset(fromList(Acc_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### Per accession two tests
+```{r}
+VL_CP_FP <- list(CP_VL = Acc_Bac_TwoTimes_DA_ASV_CP$VL, FP_VL = Acc_Bac_TwoTimes_DA_ASV_FP$VL)
+upset(fromList(VL_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+CD_CP_FP <- list(CP_CD = Acc_Bac_TwoTimes_DA_ASV_CP$CD, FP_CD = Acc_Bac_TwoTimes_DA_ASV_FP$CD)
+upset(fromList(CD_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+RI_CP_FP <- list(CP_RI = Acc_Bac_TwoTimes_DA_ASV_CP$RI, FP_RI = Acc_Bac_TwoTimes_DA_ASV_FP$RI)
+upset(fromList(RI_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+HM_CP_FP <- list(CP_HM = Acc_Bac_TwoTimes_DA_ASV_CP$HM, FP_HM = Acc_Bac_TwoTimes_DA_ASV_FP$HM)
+upset(fromList(HM_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+
+GO1_CP_FP <- list(CP_GO1 = Acc_Bac_TwoTimes_DA_ASV_CP$GO1, FP_GO1 = Acc_Bac_TwoTimes_DA_ASV_FP$GO1)
+upset(fromList(GO1_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### All data two tests
+```{r}
+All_CP_FP <- list(CP = All_Bac_TwoTimes_DA_ASV_CP, FP = All_Bac_TwoTimes_DA_ASV_FP)
+upset(fromList(All_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### All and domestication data one test
+```{r}
+All_Dom_CP_FP <- c(list(CP_All = All_Bac_TwoTimes_DA_ASV_CP, FP_All = All_Bac_TwoTimes_DA_ASV_FP), CP_dom = Dom_Bac_TwoTimes_DA_ASV_CP)
+upset(fromList(All_Dom_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+#### All DA ASVs together
+```{r}
+Acc_Bac_TwoTimes_DA_ASV_CP <- unlist(unique(Acc_Bac_TwoTimes_DA_ASV_CP))
+Acc_Bac_TwoTimes_DA_ASV_FP <- unlist(unique(Acc_Bac_TwoTimes_DA_ASV_FP))
+Dom_Bac_TwoTimes_DA_ASV_CP <- unlist(unique(Dom_Bac_TwoTimes_DA_ASV_CP))
+Acc_Dom_All_CP_FP <- list(Acc_CP = Acc_Bac_TwoTimes_DA_ASV_CP, Acc_FP = Acc_Bac_TwoTimes_DA_ASV_FP, All_CP = All_Bac_TwoTimes_DA_ASV_CP, All_FP = All_Bac_TwoTimes_DA_ASV_FP, Dom_CP = Dom_Bac_TwoTimes_DA_ASV_CP)
+upset(fromList(Acc_Dom_All_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+### Overlapping ASVs CP and FP
+#### Overlap per accession
+```{r}
+Acc_overlap_DA <- intersect(Acc_Bac_TwoTimes_DA_ASV_CP, Acc_Bac_TwoTimes_DA_ASV_FP)
+Acc_overlap_DA
+save(Acc_overlap_DA, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_OverlapDA/Acc_overlap_DA.RData")
+```
+
+#### Overlap in all data sets together
+```{r}
+Tot_overlap_DA <- intersect(unique(c(Acc_Bac_TwoTimes_DA_ASV_CP, Dom_Bac_TwoTimes_DA_ASV_CP, All_Bac_TwoTimes_DA_ASV_CP)), unique(c(Acc_Bac_TwoTimes_DA_ASV_FP, All_Bac_TwoTimes_DA_ASV_FP)))
+Tot_overlap_DA
+save(Tot_overlap_DA, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_OverlapDA/Tot_overlap_DA.RData")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 4.2 Comparing CP and FP at Family level
+## Two tests
+### Load data
+```{r}
+# CP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_FamilyLevel/Acc_TwoTimes_DA_Family_lfctax.RData")
+lfctax_CP <- Acc_TwoTimes_DA_Family_lfctax
+rm(Acc_TwoTimes_DA_Family_lfctax)
+
+# FP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_FamilyLevel/Acc_TwoTimes_DA_Family_lfctax.RData")
+lfctax_FP <- Acc_TwoTimes_DA_Family_lfctax
+rm(Acc_TwoTimes_DA_Family_lfctax)
+```
+
+### Upset plots
+#### All accessions two tests
+```{r, fig.hight = 12}
+Acc_CP_FP <- list(CP = lfctax_CP$taxon, FP = lfctax_FP$taxon)
+upset(fromList(Acc_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 4.3 Comparing CP and FP at Order level
+## Two tests
+### Load data
+```{r}
+# CP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_OrderLevel/Acc_TwoTimes_DA_Order_lfctax.RData")
+lfctax_CP <- Acc_TwoTimes_DA_Order_lfctax
+rm(Acc_TwoTimes_DA_Order_lfctax)
+
+# FP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_OrderLevel/Acc_TwoTimes_DA_Order_lfctax.RData")
+lfctax_FP <- Acc_TwoTimes_DA_Order_lfctax
+rm(Acc_TwoTimes_DA_Order_lfctax)
+```
+
+### Upset plots
+#### All accessions two tests
+```{r, fig.hight = 12}
+Acc_CP_FP <- list(CP = lfctax_CP$taxon, FP = lfctax_FP$taxon)
+upset(fromList(Acc_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 4.4 Comparing CP and FP at Class level
+## Two tests
+### Load data
+```{r}
+# CP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ClassLevel/Acc_TwoTimes_DA_Class_lfctax.RData")
+lfctax_CP <- Acc_TwoTimes_DA_Class_lfctax
+rm(Acc_TwoTimes_DA_Class_lfctax)
+
+# FP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ClassLevel/Acc_TwoTimes_DA_Class_lfctax.RData")
+lfctax_FP <- Acc_TwoTimes_DA_Class_lfctax
+rm(Acc_TwoTimes_DA_Class_lfctax)
+```
+
+### Upset plots
+#### All accessions two tests
+```{r, fig.hight = 12}
+Acc_CP_FP <- list(CP = lfctax_CP$taxon, FP = lfctax_FP$taxon)
+upset(fromList(Acc_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 4.5 Comparing CP and FP at Phylum level
+## Two tests
+### Load data
+```{r}
+# CP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_PhylumLevel/Acc_TwoTimes_DA_Phylum_lfctax.RData")
+lfctax_CP <- Acc_TwoTimes_DA_Phylum_lfctax
+rm(Acc_TwoTimes_DA_Phylum_lfctax)
+
+# FP
+## Acc ASVs detected by at least two tests
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_PhylumLevel/Acc_TwoTimes_DA_Phylum_lfctax.RData")
+lfctax_FP <- Acc_TwoTimes_DA_Phylum_lfctax
+rm(Acc_TwoTimes_DA_Phylum_lfctax)
+```
+
+### Upset plots
+#### All accessions two tests
+```{r, fig.hight = 12}
+Acc_CP_FP <- list(CP = lfctax_CP$Phylum, FP = lfctax_FP$Phylum)
+upset(fromList(Acc_CP_FP), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+### Overlap
+```{r}
+intersect(lfctax_CP$Phylum, lfctax_FP$Phylum)
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 4.6 Venn diagram DA
+## Accession
+```{r}
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DifferentialAbundance/SummaryFiles/Acc_Bac_conca_NoAn_nodup.RData")
+
+simple_Venn <- ggVennDiagram(Acc_Bac_conca_NoAn_nodup)
+print(simple_Venn)
+
+# ASVs in both VL adn HM
+ASV_VL_HM <- unlist(Acc_Bac_conca_NoAn_nodup[c("HM", "VL")])
+Duplicates_DA_VL_HM <- ASV_VL_HM[duplicated(ASV_VL_HM)]
+print(Duplicates_DA_VL_HM)
+
+save(Duplicates_DA_VL_HM, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DifferentialAbundance/SummaryFiles/Duplicates_DA_VL_HM.RData")
+```

@@ -1,0 +1,687 @@
+---
+title: "CP&FP 01_loading_and_pre_processing"
+author: "Kris de Kreek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# 0.0 Introduction
+This script is for loading and pre-processing microbiome data that is output form the DADA2 [Ernakovich pipeline](https://github.com/ErnakovichLab/dada2_ernakovichlab) as describes in our own [GitHub page](https://github.com/Marcelara/PSF_Anunna). In addition, the ASVs ware assigned to taxonomies with Qiime2 as this results in a higher resolution. Here, the data will be further processed to be able to analyse the data.  
+
+A nice [tutorial](https://www.nicholas-ollberding.com/post/introduction-to-phyloseq/) to learn how to investigate data in a phyloseq object.
+
+This and the next script are originally made by Pedro Beschoren da Costa for the [MeJA_Pilot](https://github.com/PedroBeschoren/MeJA_Pilot) and modified to fit my data.
+
+# 1.0 load all libraries, custom functions, setup environemnt
+```{r warning=FALSE, message=FALSE}
+# Set working directory
+# setwd("")
+
+# load libraries 
+library(tidyr)
+library(ggplot2)
+library(phyloseq)
+library(vegan)
+library(metagenomeSeq)
+
+# custom functions related to data loading and decontamination
+source("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/RScripts/Functions/functions_loading_and_decontamination.R")
+
+# increases memory limit used by R
+# memory.limit(size = 350000) #This function is no longer supported by Windows
+```
+
+
+# 1.1 load microbiome data
+### Swap samples
+Check whether this is needed.
+
+## 1.1.1 - Loading 16S data 
+All samples were sequenced well.
+
+#### Load OTU table
+```{r}
+# Loads the OTU table, immediately saving it as a phyloseq OTU table (lighter than a df) (from DADA2)
+raw_bac_otutab <- otu_table(object = read.table(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Microbiome/seqtab_final.txt", 
+                                                header = TRUE,
+                                                row.names = 1, # first column has row names (ASV names)
+                                                check.names = FALSE), # prevents "X" to be added to column names, such as X49_16S,
+                             taxa_are_rows = TRUE)
+head(raw_bac_otutab)
+```
+
+#### Load Taxonomy table
+```{r}
+# Updated taxonomy tale (from Qiime2)
+sklearn_bac_taxtab <- read.table(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Microbiome/taxonomy.tsv", 
+                                 header = TRUE,
+                                 sep = "\t",
+                                 row.names = 1, # first column has row names (ASV names)
+                                 check.names = FALSE) # prevents "X" to be added to column names, such as X49_16S,
+
+# adjusts number and name of columns
+sklearn_bac_taxtab <- separate(data = sklearn_bac_taxtab,
+                               col = Taxon,
+                               into = c("Kingdom", 
+                                       "Phylum", 
+                                       "Class", 
+                                       "Order", 
+                                       "Family",
+                                       "Genus", 
+                                       "Species"),
+                               sep = ";")
+
+head(sklearn_bac_taxtab) #Separated well and Feature ID is a row name
+#sklearn_bac_taxtab[c(13, 16, 71, 74, 75, 77, 78), ] #NAs are put in places where no classification was present. A subset of these samples is shown here.
+
+# Change from d__Bacteria to k__bacteria, matching fungi data set
+sklearn_bac_taxtab$Kingdom <- gsub("d__", "k__", sklearn_bac_taxtab$Kingdom)
+
+head(sklearn_bac_taxtab["Kingdom"])
+
+# Saves taxa as phyloseq object
+sklearn_bac_taxtab <- tax_table(object = as.matrix(sklearn_bac_taxtab))
+
+# Change name and remove old object
+raw_bac_taxtab <- sklearn_bac_taxtab
+rm(sklearn_bac_taxtab)
+```
+
+#### Load sequence table
+```{r}
+# Loads the representative sequences table, immediately saving it as a phyloseq refseq table (lighter than a df) (from DADA2)
+raw_bac_refseq <- refseq(physeq = Biostrings::readDNAStringSet(filepath = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Microbiome/repset.fasta", 
+                                                               use.names = TRUE)) 
+taxa_names(raw_bac_refseq) <- gsub(" .*", "", taxa_names(raw_bac_refseq)) # drops taxonomy from ASV names
+```
+
+#### Loading metadata
+```{r}
+# Loads the mapping tile, immediately saving it as a phyloseq metadata table (lighter than a df)
+raw_bac_metadata <- sample_data(object = read.table(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Metadata FP/Meta_Data_CPandFP.txt", 
+                                                    header = TRUE,
+                                                    sep = "\t",
+                                                    row.names = 1, # first column has row names (ASV names)
+                                                    check.names = FALSE)) # prevents "X" to be added to column names, such as X49_16S,
+```
+
+#### Build phyloseq object
+```{r}
+# build the main 16S phyloseq object by putting all these phyloseq-class objects (OTU table, tax table, ref seq, metadata) into a single phyloseq object (ps).
+raw_bac_ps <- merge_phyloseq(raw_bac_otutab,
+                           raw_bac_taxtab,
+                           raw_bac_refseq,
+                           raw_bac_metadata)
+
+# remove old objects to reduce memory use
+rm(raw_bac_otutab, raw_bac_taxtab, raw_bac_refseq, raw_bac_metadata)
+
+# change names from ASV to bASV (bacterial ASV), so they can be distinguished from fungal ASVs.
+taxa_names(raw_bac_ps) <- paste("b", taxa_names(raw_bac_ps), sep = "")
+tax_table(raw_bac_ps) <- gsub(" ", "", tax_table(raw_bac_ps)) # drops a space character from taxa names. I don't know how that character ended up in there [Kris: I do not see the space]
+
+# let's check the imported objects. Often errors will arise from typos when filling up the data sheets 
+otu_table(raw_bac_ps)[1:10,1:10]
+sample_data(raw_bac_ps)[1:10,1:10]
+tax_table(raw_bac_ps)[1:10,1:6]
+refseq(raw_bac_ps)
+
+# run garbage collection after creating large objects (shows a report of memory usages)
+gc()
+```
+
+<!-- #### Split CP and FP -->
+<!-- ```{r} -->
+<!-- # subset phyloseq FP -->
+<!-- FP_raw_bac_ps <- subset_samples(raw_bac_ps, Phase_PSF == "FP") -->
+<!-- table(sample_data(FP_raw_bac_ps)[ , 1]) -->
+
+<!-- # save phyloseq object FP -->
+<!-- save(FP_raw_bac_ps, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_raw_bac_ps.RData") -->
+
+<!-- # change phase of blank samples from FP to CP to add them to the CP phyloseq object as well -->
+<!-- sample_data(raw_bac_ps)[sample_data(raw_bac_ps)$Soil_conditioning == "B", "Phase_PSF"] -->
+<!-- sample_data(raw_bac_ps)[sample_data(raw_bac_ps)$Soil_conditioning == "B", "Phase_PSF"] <- rep("CP", 5) -->
+<!-- sample_data(raw_bac_ps)[sample_data(raw_bac_ps)$Soil_conditioning == "B", "Phase_PSF"] -->
+
+<!-- # subset phyloseq CP -->
+<!-- CP_raw_bac_ps <- subset_samples(raw_bac_ps, Phase_PSF == "CP") -->
+<!-- table(sample_data(CP_raw_bac_ps)[ , 1]) -->
+
+<!-- # save phyloseq object FP -->
+<!-- #save(CP_raw_bac_ps, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_raw_bac_ps.RData") -->
+
+<!-- # remove original and FP phyloseq objects -->
+<!-- rm(raw_bac_ps, FP_raw_bac_ps) -->
+<!-- ``` -->
+
+
+# 1.2 - Remove bad ASVs
+Here we will remove sequences associated with the host, background prokatyotes, low abundance ASVs, poorly identified sequences, and other bad ASVs.
+
+## 1.2.1 - Remove non-bacterial sequences & filter ASVs
+Note that the input data has been pre-filtered in the DADA2 pipeline to remove any ASVs that occur less than 3 times in the data set. This was necessary because the dada2-associated taxonomy assignment tools could not assign taxonomies to the full data set with 1 GB ram on the HPC.
+
+### Here we investigate the length of the sequences
+```{r}
+hist(as.data.frame(refseq(raw_bac_ps)@ranges)$width, breaks = 300, main = "Raw reads CP bac")
+summary(as.data.frame(refseq(raw_bac_ps)@ranges)$width) #summary on length of the reeds
+ntaxa(raw_bac_ps) #shows total number of ASVs
+summary(sample_sums(raw_bac_ps)) #shows number of reeds
+```
+
+### Here we get rid of sequences shorter than 380bp
+```{r}
+sum(as.data.frame(refseq(raw_bac_ps)@ranges)$width < 380) # count number of reads smaller than 380bp
+sum(as.data.frame(refseq(raw_bac_ps)@ranges)$width > 380)
+
+raw_bac_ps <- prune_taxa(taxa = as.data.frame(refseq(raw_bac_ps)@ranges)$width > 380,
+                       x = raw_bac_ps)
+ntaxa(raw_bac_ps) #shows total number of ASVs
+summary(sample_sums(raw_bac_ps)) #shows number of reeds
+```
+
+### Keeps only ASVs identified as bacterial
+```{r}
+raw_bac_ps <- subset_taxa(raw_bac_ps, Kingdom == "k__Bacteria")
+ntaxa(raw_bac_ps) #shows total number of ASVs
+summary(sample_sums(raw_bac_ps)) #shows number of reeds
+```
+
+### Remove Salinibacter ASV(s)
+```{r}
+raw_bac_ps #original data set
+physeq_OnlySal <- subset_taxa(raw_bac_ps, Genus == "g__Salinibacter")
+physeq_OnlySal
+raw_bac_ps <- subset_taxa(raw_bac_ps, Genus != "g__Salinibacter" | is.na(Genus)) # remove Salinibacter genus but keep undefined genesis (NAs)
+raw_bac_ps #data set without salinibacter
+
+rm(physeq_OnlySal)
+```
+
+### Define library sizes as metadata before filtering
+```{r}
+raw_bac_ps@sam_data$library_sizes_prefiltering <- sample_sums(raw_bac_ps)
+hist(sample_sums(raw_bac_ps), breaks = 20)
+```
+
+### Removes taxa having less than 8 reads across all samples, as VSEARCH standard
+```{r}
+otu_table(raw_bac_ps) <- otu_table(raw_bac_ps)[which (rowSums(otu_table(raw_bac_ps)) > 7),]
+ntaxa(raw_bac_ps) #shows total number of ASVs
+summary(sample_sums(raw_bac_ps)) #shows number of reeds
+```
+
+### Remove ASV occurring in less than three samples
+We remove ASVs that occur in less than 3 samples.
+```{r}
+filter <- phyloseq::genefilter_sample(raw_bac_ps, filterfun_sample(function(x) x > 0), A = 3) 
+raw_bac_ps <- prune_taxa(filter, raw_bac_ps)
+ntaxa(raw_bac_ps) #shows total number of ASVs
+summary(sample_sums(raw_bac_ps)) #shows number of reeds
+```
+
+### Check and remove plant-host contamination
+```{r}
+### define plastid, mitochondria and host plant contamination ps objects
+Mitochondria_ps <- subset_taxa(raw_bac_ps, Family == "f__Mitochondria" | Family == "Mitochondria")
+Plastid_ps <- subset_taxa(raw_bac_ps, Order == "o__Chloroplast" | Order == "Chloroplast") 
+host_plant_ps <- merge_phyloseq(Mitochondria_ps, Plastid_ps)
+
+### quick histogram showing plant DNA contamination
+hist(sample_sums(host_plant_ps)/sample_sums(raw_bac_ps)*100, breaks = 50)
+summary(sample_sums(host_plant_ps)/sample_sums(raw_bac_ps)*100)
+
+summary(sample_sums(Mitochondria_ps)/sample_sums(raw_bac_ps)*100)
+summary(sample_sums(Plastid_ps)/sample_sums(raw_bac_ps)*100)
+```
+
+Between 0 and 1% of the ASVs per sample is contaminated with mitochondrial or chloroplast DNA.
+
+```{r}
+### define host plant 16S contamination as metadata (add the info the the metadata sheet)
+raw_bac_ps@sam_data$Mitochondria_reads <- sample_sums(Mitochondria_ps)
+raw_bac_ps@sam_data$Plastid_reads <- sample_sums(Plastid_ps)
+raw_bac_ps@sam_data$Host_DNA_n_reads <- sample_sums(host_plant_ps)
+raw_bac_ps@sam_data$Host_DNA_contamination_pct <- sample_sums(host_plant_ps)/sample_sums(raw_bac_ps)*100
+
+### remove plant host sequences (plastid and mitochondrial DNA) 
+raw_bac_ps <- remove_Chloroplast_Mitochondria(raw_bac_ps)
+```
+
+### Check library size
+```{r}
+# add library sizes as part of metadata
+sample_data(raw_bac_ps)$library_size <- sample_sums(raw_bac_ps)
+
+#check library size distribution
+hist(sample_data(raw_bac_ps)$library_size, breaks = 20)
+summary(sample_data(raw_bac_ps)$library_size) #shows the number of reeds
+
+# remove samples with library size = 0  (non-informative; failed PCR/sequencing)
+#raw_bac_ps<-subset_samples(raw_bac_ps, library_size >0) #not applicable
+
+# remove ps objects
+rm(Mitochondria_ps, Plastid_ps, host_plant_ps)
+
+# run garbage collection after creating large objects
+gc()
+```
+
+
+# 1.3 - Decontaminate phyloseq objects
+The decontam package will use blank DNA samples to remove possible contaminants. Here we use a single custom function to run decontamination, generate plots, and return a clean phyloseq object
+
+We will also check the number of reads in a blank sample (average +SD) so we can compare those blank samples with libraries with low number of reads. samples that cannot be distinguished from a blank (in terms of library size) 
+
+### Decontaminate
+```{r}
+unnormalized_bac_ps <- decontaminate_and_plot(raw_bac_ps)
+
+# phyloseq object without contamination
+unnormalized_bac_ps[1]
+
+# Number of ASVs assigned as contamination
+unnormalized_bac_ps[5]
+
+# ASVs assigned as contamination
+unnormalized_bac_ps[4]
+```
+
+### Check blanks
+Let's look into how many reads our blank had (average + sd) so we can compare those to libraries with very low number of reads.
+```{r}
+blank_reads_bac <- sort(sample_sums(subset_samples(raw_bac_ps, Soil_conditioning == "B")))
+plot(blank_reads_bac)
+
+#clean up environment to free memory
+rm(raw_bac_ps)
+```
+
+### Check phyloseq object
+After checking the decontamination plots and reports, we can remove them and focus on the phyloseq object.
+```{r}
+unnormalized_bac_ps <- unlist(unnormalized_bac_ps[[1]])
+```
+
+#### Check library size Bacteria
+Now let's check the lower end of our library sizes.
+```{r}
+sort(sample_sums(unnormalized_bac_ps))
+plot(sort(sample_sums(unnormalized_bac_ps)), xlab = "Number of Reads")
+```
+
+No samples have a smaller library size than 6000 so no samples will be removed.
+
+#### Remove samples with a number of reads similar to blanks
+```{r}
+unnormalized_bac_ps <- subset_samples(unnormalized_bac_ps, library_size > 6000)
+```
+
+### Set factors
+```{r}
+# set Cat_treatment as factor, and then order it properly
+unnormalized_bac_ps@sam_data$Cat_treatment <- factor(unnormalized_bac_ps@sam_data$Cat_treatment, levels = c("Co", "Mb", "Un"))
+
+# set Soil_conditioning as factor, and then order it properly
+unnormalized_bac_ps@sam_data$Soil_conditioning <- factor(unnormalized_bac_ps@sam_data$Soil_conditioning, levels = c("Co", "Mb", "Un"))
+
+# set Accession as factor, and then order it properly
+unnormalized_bac_ps@sam_data$Accession <- factor(unnormalized_bac_ps@sam_data$Accession, levels = c("OH", "DD", "HE", "KI", "VL", "CD", "RI", "KT", "MC", "HM", "IT1", "GO1", "Un"))
+
+# set Domestication as factor, and then order it properly
+unnormalized_bac_ps@sam_data$Domestication <- factor(unnormalized_bac_ps@sam_data$Domestication, levels = c("Wild", "Cultivated", "Un"))
+
+# set Batch as factor
+unnormalized_bac_ps@sam_data$Batch <- factor(unnormalized_bac_ps@sam_data$Batch)
+```
+
+
+# 1.4 - Plot library sizes per treatment and check NAs and uncultured ASVs
+### Check number of reeds
+```{r}
+# let's check the number of reads in a couple histograms
+hist(sample_sums(unnormalized_bac_ps), breaks = 50)
+summary(sample_sums(unnormalized_bac_ps))
+```
+
+### Check library size
+```{r}
+# check plot for some minimum library sizes on all samples
+
+ggplot(data = sample_data(unnormalized_bac_ps), 
+           mapping = aes(x = library_size, y = Accession, fill = Cat_treatment)) +
+      geom_jitter() +
+      geom_boxplot() +
+      scale_y_discrete(limits = rev) +
+      geom_vline(xintercept = 30000, color="green") +
+      geom_vline(xintercept = 25000, color="yellow") +
+      geom_vline(xintercept = 20000, color="blue") +
+      geom_vline(xintercept = 15000, color="red") +
+      labs(x = "library size",
+           y = "Accession") #+
+      #theme(axis.text.x = element_text(angle = 20, vjust = 0.5, hjust=1))
+
+# # In case I want to do a subset of the data
+# lapply(unnormalized_bac_ps, function(x)
+#     ggplot(data = sample_data(subset_samples(x, Compartment == "Rhizosphere")), 
+#            mapping = aes(x = library_size, y = Soil_Slurry_Treatment, color = Soil_Slurry_Treatment, fill = Phase)) +
+#     geom_jitter() +
+#     geom_boxplot() +
+#     scale_y_discrete(limits = rev) +
+#     geom_vline(xintercept = 30000, color="green") +
+#     geom_vline(xintercept = 25000, color="yellow") +
+#     geom_vline(xintercept = 20000, color="blue") +
+#     geom_vline(xintercept = 15000, color="red") +
+#     labs(x = "library size",
+#          y = "Soil slurry treatment and phase") +
+#     theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)))
+```
+
+### Check plant-host contamination
+```{r}
+# check bacterial 16S plant host contamination
+ggplot(data = sample_data(unnormalized_bac_ps), 
+           mapping = aes(x = Host_DNA_contamination_pct, y = Accession, fill = Cat_treatment)) +
+      geom_jitter() +
+      geom_boxplot() +
+      scale_y_discrete(limits = rev) +
+      # geom_vline(xintercept = 30000, color="green") +
+      # geom_vline(xintercept = 25000, color="yellow") +
+      # geom_vline(xintercept = 20000, color="blue") +
+      #geom_vline(xintercept = 15000, color="red") +
+      labs(x = "Plant host DNA contamination",
+           y = "Accession") #+
+      #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+```
+
+### check percentage of NA in taxonomy
+```{r}
+### check_n_taxa_NA_percentage(ps_object, ntaxa))
+check_n_taxa_NA_percentage(unnormalized_bac_ps, 100) # top 100 taxa
+check_n_taxa_NA_percentage(unnormalized_bac_ps, 1000)
+check_n_taxa_NA_percentage(unnormalized_bac_ps, 10000) # top 10,000 taxa
+#A higher the number of taxa does not make a difference
+```
+
+### Check uncultured and unassigned taxa
+Out commanded lines mean that type is not present in the data set.
+```{r}
+#subset_taxa(unnormalized_bac_ps, Kingdom == "Unassigned") #No hits as I sub-setted the data with only k__Bacteria before
+
+# subset_taxa(unnormalized_bac_ps, Class == "c__uncultured" | Class == "c__unidentified")
+# subset_taxa(unnormalized_bac_ps, Class == "c__uncultured")
+# subset_taxa(unnormalized_bac_ps, Class == "c__unidentified") #not in data set
+
+# subset_taxa(c__unidentified, Family == "f__uncultured" | Family == "f__unidentified")
+# subset_taxa(unnormalized_bac_ps, Family == "f__uncultured")
+# subset_taxa(unnormalized_bac_ps, Family == "f__unidentified") #not in data set
+
+# subset_taxa(c__unidentified, Genus == "g__uncultured" | Genus == "g__unidentified")
+# subset_taxa(unnormalized_bac_ps, Genus == "g__uncultured")
+# subset_taxa(unnormalized_bac_ps, Genus == "g__unidentified") #not in data set
+```
+
+There are no uncultured or unidentified samples.
+
+
+# 1.5 export filtered unnormalized ps object
+### Save RData
+let's save these normalized objects as RData so they can be loaded in other scripts.
+```{r}
+save(unnormalized_bac_ps, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_together/unnormalized_bac_ps.RData")
+```
+
+
+# 1.6 Data Normalization
+A big challenge in microbiome data is the difference in library sizes: some samples are covered more in depth than others. This means sample1 may have 12.000 sequences, while samples2 may have 150.000 sequences. This is because of the sequencing machinery, and makes the data "compositional". You must normalize this data to avoid generating artefacts. There is *extensive* literature on this topic. Here we will use 2 methods: rarefaction, a classic approach necessary for some analysis models, and cumulative sum scaling with MetagenomeSeq. 
+
+## 1.6a Rarefaction & rarefying
+This method will cut your library sizes to the minimum library size of your sequencing effort, and then repopulate the OTU tables by picking OTUs/ASVs at random. This method effectively trows away a lot of data, so it's coming into disuse.
+
+Still, we will use rarefied data for alpha diversity, neutral model fits, and core microbiome definition.
+
+### 1.6a.1 select a cut-off point for rarefaction
+Now your bacterial phyloseq object is rid of detectable contaminants and plant DNA. Note that for fungal ITS sequences you may have some plant or microfauna DNA in the middle of your fungal sequences!
+
+Let's further explore some distribution on the ASVs to determine good cut-off points for rarefaction.
+
+#### Rarefraction curve
+```{r}
+# finally, a rarefaction curve
+a <- rarecurve(t(as.data.frame(otu_table(unnormalized_bac_ps))), 
+          label = FALSE, 
+          step = 2000,
+          main="Rarefaction", ylab = "Number of ASVs", xlab = "Number of DNA reads",
+          abline(v = 10000, col="red", lwd=3, lty=2))
+rm(a)
+```
+
+
+## 1.6b Metagenomeseq
+We use this package to be able to normalize library sizes without using rarefaction and also accounting for sparsity (high number of zeros in the data set). This is done by considering the counts up to a certain quantile (cumulative sum scaling, CSS). We will perform this with the metagenomseq package.
+
+We will use CSS-normalized data for beta diversity analysis: ordinations, permanovas and beta dispersion.
+
+### Remove sampels with low number of reads
+```{r}
+unnormalized_bac_ps_cut <- subset_samples(unnormalized_bac_ps, sample_names(unnormalized_bac_ps) != "C478" & sample_names(unnormalized_bac_ps) != "C043" & sample_names(unnormalized_bac_ps) != "F371" & sample_names(unnormalized_bac_ps) != "F178")
+```
+
+### Metagenomeseq
+```{r}
+# first, let's transform the phyloseq object into an MR experiment object
+MRexp_objt <- phyloseq_to_metagenomeSeq(unnormalized_bac_ps_cut)
+
+# normalizes the object by cumulative sum scaling, a widely used method
+cumNorm(MRexp_objt)
+
+# here you can access the abundance matrix normalized by cumulative sum scaling. You could overwrite the phyloseq object with this
+CSS_matrix <- MRcounts(MRexp_objt, norm = TRUE, log = TRUE)
+```
+
+Using a log scale will in this last line of code will essentially reduce the impact of common species and increase the impact of rare species.
+
+```{r}
+# make a new phyloseq object list...
+CSS_bac_ps <- unnormalized_bac_ps_cut
+
+# and now change it's taxa table
+otu_table(CSS_bac_ps) <- otu_table(CSS_matrix, taxa_are_rows = TRUE)
+
+# this is your final phyloseq object
+CSS_bac_ps
+```
+
+### Check phyloseq object
+```{r}
+# Check number of reads per sample
+sort(sample_sums(CSS_bac_ps))[1:6]
+summary(sample_sums(CSS_bac_ps))
+
+# Add new library size to meta data
+CSS_bac_ps@sam_data$library_sizes_CSS <- sample_sums(CSS_bac_ps)
+```
+
+### Save new phyloseq object
+```{r}
+# let's save these unnormalized objects as RData so they can be loaded in other scripts
+save(CSS_bac_ps, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_together/CSS_bac_ps.RData")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+## 1.6c Scaling around median
+Code is taken from phyloseq tutorial on [Functions for Accessing and (Pre)Processing Data](https://joey711.github.io/phyloseq/preprocess.html).
+
+### Loading unnormalised data
+```{r}
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_together/unnormalized_bac_ps.RData")
+```
+
+### Remove sampels with low number of reads
+```{r}
+unnormalized_bac_ps_cut <- subset_samples(unnormalized_bac_ps, sample_names(unnormalized_bac_ps) != "C478" & sample_names(unnormalized_bac_ps) != "C043" & sample_names(unnormalized_bac_ps) != "F371" & sample_names(unnormalized_bac_ps) != "F178")
+```
+
+### Saling data around median
+```{r}
+total <- median(sample_sums(unnormalized_bac_ps_cut))
+standf <- function(x, t = total) round(t * (x / sum(x)))
+median_bac_ps <- transform_sample_counts(unnormalized_bac_ps_cut, standf)
+```
+
+### Check number of reads
+```{r}
+sort(sample_sums(median_bac_ps))[1:6]
+summary(sample_sums(median_bac_ps))
+```
+
+### Save phyloseq object
+```{r}
+save(median_bac_ps, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_together/median_bac_ps.RData")
+```
+
+
+# 1.7 Check library size outliers
+## Original library size
+```{r}
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_together/CSS_bac_ps.RData")
+
+# Remove unplanted CTRL
+CSS_bac_ps <- subset_samples(CSS_bac_ps, Accession != "Un")
+
+# check library size
+a <- sample_data(CSS_bac_ps)[ , c("library_size", "Accession")]
+a$Sample <- rownames(a)
+a <- a[order(a$library_size), ]
+head(a, 20)
+a[order(a$Accession), 1:2]
+summary(a)
+table(a$Accession)
+aggregate(a$library_size, by = list(a$Accession), FUN = mean)
+
+# Outliers
+b <- a[c("C085", "C105", "C110", "C217", "C256", "C326", "C375", "C379", "C425", "C429", "C438", "C480"), ]
+b[order(b$library_size), ]
+
+#Potential other outliers
+a[c("C380", "C295", "C177", "C170", "C165"), ]
+```
+
+### Test outliers with t distribution
+```{r}
+# GO1
+d <- a[a$Accession == "GO1", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "GO1", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "GO1" & a$Sample == "C085", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+v <- a[a$Accession == "GO1" & a$Sample == "C105", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+v <- a[a$Accession == "GO1" & a$Sample == "C110", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+
+# IT1
+d <- a[a$Accession == "IT1", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "IT1", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "IT1" & a$Sample == "C217", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+
+# KI
+d <- a[a$Accession == "KI", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "KI", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "KI" & a$Sample == "C256", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+
+# KT
+d <- a[a$Accession == "KT", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "KT", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "KT" & a$Sample == "C295", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+
+# OH
+d <- a[a$Accession == "OH", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "OH", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "OH" & a$Sample == "C326", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+
+# RI
+d <- a[a$Accession == "RI", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "RI", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "RI" & a$Sample == "C375", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+v <- a[a$Accession == "RI" & a$Sample == "C379", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+v <- a[a$Accession == "RI" & a$Sample == "C380", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+
+# MC
+d <- a[a$Accession == "MC", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "MC", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "MC" & a$Sample == "C425", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+v <- a[a$Accession == "MC" & a$Sample == "C429", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+v <- a[a$Accession == "MC" & a$Sample == "C438", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+
+# VL
+d <- a[a$Accession == "VL", "library_size"]
+m <- mean(d$library_size)
+n <- nrow(a[a$Accession == "VL", "library_size"])
+s <- sd(d$library_size)
+
+v <- a[a$Accession == "VL" & a$Sample == "C480", ]
+pt(q = (v$library_size-m)/s, df = n-1, lower.tail = TRUE)
+
+rm(d, m, n, v, s)
+```

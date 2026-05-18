@@ -1,0 +1,383 @@
+---
+title: "FP_08_Relativer abundance stack plots"
+author: "Kris de Kreek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+This script is adapted from a script form Melissa Uribe Acosta. Extra input comes from a script of Pedro Beschore da Costa.   
+   
+   
+Tutorials   
+- [Heatmap for final plot](http://rstudio-pubs-static.s3.amazonaws.com/288398_185f2889a5f641c6b9aa7b14fa15b634.1html)
+   
+   
+# 7.0 load libraries
+### Load libraries
+```{r, warning = FALSE, message=FALSE}
+R.version$version.string # prints R version
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(ggplot2)
+packageVersion("ggplot2")
+library(ggh4x) #for coloring strip facet wrap
+packageVersion("ggh4x")
+```
+
+# 7.1 Stack plot seperate accessions at family level
+## Load data
+```{r}
+## Load Phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+```
+
+## Remove RI
+```{r}
+FP_unnormalized_bac_ps_ForDA_clean <- subset_samples(FP_unnormalized_bac_ps_ForDA_clean, Accession != "RI")
+levels(sample_data(FP_unnormalized_bac_ps_ForDA_clean)$Accession)
+```
+
+## Merge data on Family level
+```{r}
+# Turn NAs into "unclassified"
+tax <- tax_table(FP_unnormalized_bac_ps_ForDA_clean)
+tax[is.na(tax[, "Family"]), "Family"] <- "Unclassified"
+tax_table(FP_unnormalized_bac_ps_ForDA_clean) <- tax
+
+# Merge same Family by summing counts
+FP_unnormalized_bac_ps_ForDA_clean <- tax_glom(FP_unnormalized_bac_ps_ForDA_clean, taxrank = "Family", NArm = TRUE)
+```
+
+## Extract data
+```{r}
+# Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(y) y / sum(y))
+
+# Melt ps object
+ps_df <- psmelt(FP_unnormalized_bac_ps_ForDA_clean)
+```
+
+## Aggregating samples per treatment group
+```{r}
+# Mean abundance per Accession / Treatment / Family
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Family, data = ps_df, FUN = mean)
+
+# Renormalize within each Accession × Soil_conditioning
+split_idx <- interaction(ps_df_sum$Accession, ps_df_sum$Soil_conditioning)
+ps_df_sum$Abundance <- ave(ps_df_sum$Abundance, split_idx, FUN = function(x) x / sum(x))
+```
+
+## Find most abundant Family
+```{r}
+# Top 12 Family
+fam_means <- aggregate(Abundance ~ Family, data = ps_df_sum, FUN = mean)
+fam_means <- fam_means[order(fam_means$Abundance, decreasing = TRUE), ]
+top12_fam <- fam_means$Family[1:12]
+
+# pooling other Family
+ps_df_sum$Family_plot <- ps_df_sum$Family
+ps_df_sum$Family_plot[!ps_df_sum$Family %in% top12_fam] <- "Other"
+
+# merging all Family together
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Family_plot, data = ps_df_sum, FUN = sum)
+```
+
+## Make stack plot
+```{r, fig.height=3.5, fig.width=6}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#E69F00", 1), rep("#D55E00", 3))))
+
+ggplot(ps_df_sum, aes(x = Soil_conditioning, y = Abundance, fill = Family_plot)) +
+ geom_bar(stat = "identity", width = 0.9) +
+ facet_wrap2(~ Accession, 
+             nrow = 1,
+             strip = strip0) +
+ #scale_fill_viridis_d(option = "viridis") +
+ scale_fill_viridis_d(option = "turbo") +
+ labs(x = "Soil treatment",
+    y = "Relative abundance",
+    fill = "Family") +
+ theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 12, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 12),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+# 7.2 Stack plot seperate accessions at Order level
+## Load data
+```{r}
+## Load Phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+```
+
+## Remove RI
+```{r}
+FP_unnormalized_bac_ps_ForDA_clean <- subset_samples(FP_unnormalized_bac_ps_ForDA_clean, Accession != "RI")
+levels(sample_data(FP_unnormalized_bac_ps_ForDA_clean)$Accession)
+```
+
+## Merge data on Order level
+```{r}
+# Turn NAs into "unclassified"
+tax <- tax_table(FP_unnormalized_bac_ps_ForDA_clean)
+tax[is.na(tax[, "Order"]), "Order"] <- "Unclassified"
+tax_table(FP_unnormalized_bac_ps_ForDA_clean) <- tax
+
+# Merge same Order by summing counts
+FP_unnormalized_bac_ps_ForDA_clean <- tax_glom(FP_unnormalized_bac_ps_ForDA_clean, taxrank = "Order", NArm = TRUE)
+```
+
+## Extract data
+```{r}
+# Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(y) y / sum(y))
+
+# Melt ps object
+ps_df <- psmelt(FP_unnormalized_bac_ps_ForDA_clean)
+```
+
+## Aggregating samples per treatment group
+```{r}
+# Mean abundance per Accession / Treatment / Order
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Order, data = ps_df, FUN = mean)
+
+# Renormalize within each Accession × Soil_conditioning
+split_idx <- interaction(ps_df_sum$Accession, ps_df_sum$Soil_conditioning)
+ps_df_sum$Abundance <- ave(ps_df_sum$Abundance, split_idx, FUN = function(x) x / sum(x))
+```
+
+## Find most abundant Order
+```{r}
+# Top 12 Order
+fam_means <- aggregate(Abundance ~ Order, data = ps_df_sum, FUN = mean)
+fam_means <- fam_means[order(fam_means$Abundance, decreasing = TRUE), ]
+top12_fam <- fam_means$Order[1:12]
+
+# pooling other Order
+ps_df_sum$Order_plot <- ps_df_sum$Order
+ps_df_sum$Order_plot[!ps_df_sum$Order %in% top12_fam] <- "Other"
+
+# merging all Order together
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Order_plot, data = ps_df_sum, FUN = sum)
+```
+
+## Make stack plot
+```{r, fig.height=3.5, fig.width=6}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#E69F00", 1), rep("#D55E00", 3))))
+
+ggplot(ps_df_sum, aes(x = Soil_conditioning, y = Abundance, fill = Order_plot)) +
+ geom_bar(stat = "identity", width = 0.9) +
+ facet_wrap2(~ Accession, 
+             nrow = 1,
+             strip = strip0) +
+ #scale_fill_viridis_d(option = "viridis") +
+ scale_fill_viridis_d(option = "turbo") +
+ labs(x = "Soil treatment",
+    y = "Relative abundance",
+    fill = "Order") +
+ theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 12, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 12),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+# 7.3 Stack plot seperate accessions at Class level
+## Load data
+```{r}
+## Load Phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+```
+
+## Merge data on Class level
+```{r}
+# Turn NAs into "unclassified"
+tax <- tax_table(FP_unnormalized_bac_ps_ForDA_clean)
+tax[is.na(tax[, "Class"]), "Class"] <- "Unclassified"
+tax_table(FP_unnormalized_bac_ps_ForDA_clean) <- tax
+
+# Merge same Class by summing counts
+FP_unnormalized_bac_ps_ForDA_clean <- tax_glom(FP_unnormalized_bac_ps_ForDA_clean, taxrank = "Class", NArm = TRUE)
+```
+
+## Remove RI
+```{r}
+FP_unnormalized_bac_ps_ForDA_clean <- subset_samples(FP_unnormalized_bac_ps_ForDA_clean, Accession != "RI")
+levels(sample_data(FP_unnormalized_bac_ps_ForDA_clean)$Accession)
+```
+
+## Extract data
+```{r}
+# Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(y) y / sum(y))
+
+# Melt ps object
+ps_df <- psmelt(FP_unnormalized_bac_ps_ForDA_clean)
+```
+
+## Aggregating samples per treatment group
+```{r}
+# Mean abundance per Accession / Treatment / Class
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Class, data = ps_df, FUN = mean)
+
+# Renormalize within each Accession × Soil_conditioning
+split_idx <- interaction(ps_df_sum$Accession, ps_df_sum$Soil_conditioning)
+ps_df_sum$Abundance <- ave(ps_df_sum$Abundance, split_idx, FUN = function(x) x / sum(x))
+```
+
+## Find most abundant Class
+```{r}
+# Top 12 Class
+fam_means <- aggregate(Abundance ~ Class, data = ps_df_sum, FUN = mean)
+fam_means <- fam_means[order(fam_means$Abundance, decreasing = TRUE), ]
+top12_fam <- fam_means$Class[1:12]
+
+# pooling other Class
+ps_df_sum$Class_plot <- ps_df_sum$Class
+ps_df_sum$Class_plot[!ps_df_sum$Class %in% top12_fam] <- "Other"
+
+# merging all Class together
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Class_plot, data = ps_df_sum, FUN = sum)
+```
+
+## Make stack plot
+```{r, fig.height=3.5, fig.width=6}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#E69F00", 1), rep("#D55E00", 3))))
+
+ggplot(ps_df_sum, aes(x = Soil_conditioning, y = Abundance, fill = Class_plot)) +
+ geom_bar(stat = "identity", width = 0.9) +
+ facet_wrap2(~ Accession, 
+             nrow = 1,
+             strip = strip0) +
+ #scale_fill_viridis_d(option = "viridis") +
+ scale_fill_viridis_d(option = "turbo") +
+ labs(x = "Soil treatment",
+    y = "Relative abundance",
+    fill = "Class") +
+ theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 12, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 12),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+# 7.4 Stack plot seperate accessions at Phylum level
+## Load data
+```{r}
+## Load Phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+```
+
+## Remove RI
+```{r}
+FP_unnormalized_bac_ps_ForDA_clean <- subset_samples(FP_unnormalized_bac_ps_ForDA_clean, Accession != "RI")
+levels(sample_data(FP_unnormalized_bac_ps_ForDA_clean)$Accession)
+```
+
+## Merge data on Phylum level
+```{r}
+# Turn NAs into "unclassified"
+tax <- tax_table(FP_unnormalized_bac_ps_ForDA_clean)
+tax[is.na(tax[, "Phylum"]), "Phylum"] <- "Unclassified"
+tax_table(FP_unnormalized_bac_ps_ForDA_clean) <- tax
+
+# Merge same Phylum by summing counts
+FP_unnormalized_bac_ps_ForDA_clean <- tax_glom(FP_unnormalized_bac_ps_ForDA_clean, taxrank = "Phylum", NArm = TRUE)
+```
+
+## Extract data
+```{r}
+# Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(y) y / sum(y))
+
+# Melt ps object
+ps_df <- psmelt(FP_unnormalized_bac_ps_ForDA_clean)
+```
+
+## Aggregating samples per treatment group
+```{r}
+# Mean abundance per Accession / Treatment / Phylum
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Phylum, data = ps_df, FUN = mean)
+
+# Renormalize within each Accession × Soil_conditioning
+split_idx <- interaction(ps_df_sum$Accession, ps_df_sum$Soil_conditioning)
+ps_df_sum$Abundance <- ave(ps_df_sum$Abundance, split_idx, FUN = function(x) x / sum(x))
+```
+
+## Find most abundant Phylum
+```{r}
+# Top 12 Phylum
+fam_means <- aggregate(Abundance ~ Phylum, data = ps_df_sum, FUN = mean)
+fam_means <- fam_means[order(fam_means$Abundance, decreasing = TRUE), ]
+top12_fam <- fam_means$Phylum[1:12]
+
+# pooling other Phylum
+ps_df_sum$Phylum_plot <- ps_df_sum$Phylum
+ps_df_sum$Phylum_plot[!ps_df_sum$Phylum %in% top12_fam] <- "Other"
+
+# merging all Phylum together
+ps_df_sum <- aggregate(Abundance ~ Accession + Soil_conditioning + Phylum_plot, data = ps_df_sum, FUN = sum)
+```
+
+## Make stack plot
+```{r, fig.height=3.5, fig.width=6}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#E69F00", 1), rep("#D55E00", 3))))
+
+ggplot(ps_df_sum, aes(x = Soil_conditioning, y = Abundance, fill = Phylum_plot)) +
+ geom_bar(stat = "identity", width = 0.9) +
+ facet_wrap2(~ Accession, 
+             nrow = 1,
+             strip = strip0) +
+ #scale_fill_viridis_d(option = "viridis") +
+ scale_fill_viridis_d(option = "turbo") +
+ labs(x = "Soil treatment",
+    y = "Relative abundance",
+    fill = "Phylum") +
+ theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 12, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 12),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```

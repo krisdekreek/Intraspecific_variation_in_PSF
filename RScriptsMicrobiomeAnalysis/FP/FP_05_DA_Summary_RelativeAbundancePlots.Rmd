@@ -1,0 +1,1814 @@
+---
+title: "FP_05_differential_abundance_Summary_Results"
+author: "Kris de Kreek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+This script is adapted from a script form Melissa Uribe Acosta. Extra input comes from a script of Pedro Beschore da Costa.   
+   
+   
+Tutorials   
+- [Heatmap for final plot](http://rstudio-pubs-static.s3.amazonaws.com/288398_185f2889a5f641c6b9aa7b14fa15b635.html)
+   
+   
+# 5.0 load libraries, improve memory use and subset objects for the desired treatment comparisons
+### Load libraries
+```{r, warning = FALSE, message=FALSE}
+R.version$version.string # prints R version
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(metamisc) #for phyloseq_sep_variable (and more?)
+packageVersion("metamisc")
+library(DESeq2)
+packageVersion("DESeq2")
+library(zinbwave)
+packageVersion("zinbwave")
+library(UpSetR)
+packageVersion("UpSetR")
+library(tuple)
+packageVersion("tuple")
+library(ggpubr)
+packageVersion("ggpubr")
+library(stringr)
+packageVersion("stringr")
+library(pheatmap)
+packageVersion("pheatmap")
+library(ggVennDiagram)
+packageVersion("ggVennDiagram")
+```
+
+
+# 5.1 Relative abundance comparing ASVs HM and VL
+## ASVs detected by two DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+# Extracting overlapping ASVs HM and VL
+Acc_Bac_HM_VL_DA_ASV <- c(Acc_Bac_TwoTimes_DA_ASV$VL, Acc_Bac_TwoTimes_DA_ASV$HM)
+Acc_Bac_NumbOcc_DA_ASV <- table(Acc_Bac_HM_VL_DA_ASV)
+Acc_Bac_HMVLoverlap_DA_ASV <- names(Acc_Bac_NumbOcc_DA_ASV[Acc_Bac_NumbOcc_DA_ASV == 2])
+Acc_Bac_HMVLoverlap_DA_ASV
+
+# Remove DA ASVs that are shared with GO1
+Acc_Bac_HM_VL_GO1_DA_ASV <- c(Acc_Bac_TwoTimes_DA_ASV$VL, Acc_Bac_TwoTimes_DA_ASV$HM, Acc_Bac_TwoTimes_DA_ASV$GO1)
+Acc_Bac_NumbOcc_DA_ASV <- table(Acc_Bac_HM_VL_GO1_DA_ASV)
+Acc_Bac_HMVLGO1overlap_DA_ASV <- names(Acc_Bac_NumbOcc_DA_ASV[Acc_Bac_NumbOcc_DA_ASV == 3])
+Acc_Bac_HMVLGO1overlap_DA_ASV
+Acc_Bac_HMVLoverlap_DA_ASV <- Acc_Bac_HMVLoverlap_DA_ASV[! Acc_Bac_HMVLoverlap_DA_ASV %in% Acc_Bac_HMVLGO1overlap_DA_ASV]
+
+# Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA_VLHM <- prune_taxa(Acc_Bac_HMVLoverlap_DA_ASV, FP_unnormalized_bac_ps_ForDA_clean_RA)
+ps_RA_VLHM <- subset_samples(ps_RA_VLHM, Accession == "HM" | Accession == "VL")
+tax_table(ps_RA_VLHM)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA_VLHM <- psmelt(ps_RA_VLHM)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA_VLHM$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA_VLHM$Genus[na_genus] <- paste0("Uncl_", ps_RA_VLHM$Class[na_genus])
+ps_RA_VLHM$ASV_Genus <- paste(ps_RA_VLHM$OTU, ps_RA_VLHM$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA_VLHM,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA_VLHM <- merge(ps_RA_VLHM,
+                    otu_means[, c("OTU", "difference")],
+                    by = "OTU",
+                    all.x = TRUE)
+ps_RA_VLHM$Genus <- with(ps_RA_VLHM, reorder(Genus, difference))
+ps_RA_VLHM$OTU <- with(ps_RA_VLHM, reorder(OTU, -difference))
+```
+
+```{r, fig.height=12, fig.width=19}
+ggplot(ps_RA_VLHM, 
+       aes(x = Accession, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Accession), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Accession") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "right")
+```
+
+```{r, fig.height=6, fig.width=8}
+ggplot(ps_RA_VLHM, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+## ASVs detected by three DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_ThreeTimes_DA_ASV.RData")
+
+# Extracting overlapping ASVs HM and VL
+Acc_Bac_HM_VL_DA_ASV <- c(Acc_Bac_ThreeTimes_DA_ASV$VL, Acc_Bac_ThreeTimes_DA_ASV$HM)
+Acc_Bac_NumbOcc_DA_ASV <- table(Acc_Bac_HM_VL_DA_ASV)
+Acc_Bac_HMVLoverlap_DA_ASV <- names(Acc_Bac_NumbOcc_DA_ASV[Acc_Bac_NumbOcc_DA_ASV == 2])
+Acc_Bac_HMVLoverlap_DA_ASV
+
+# Remove DA ASVs that are shared with GO1
+Acc_Bac_HM_VL_GO1_DA_ASV <- c(Acc_Bac_ThreeTimes_DA_ASV$VL, Acc_Bac_ThreeTimes_DA_ASV$HM, Acc_Bac_ThreeTimes_DA_ASV$GO1)
+Acc_Bac_NumbOcc_DA_ASV <- table(Acc_Bac_HM_VL_GO1_DA_ASV)
+Acc_Bac_HMVLGO1overlap_DA_ASV <- names(Acc_Bac_NumbOcc_DA_ASV[Acc_Bac_NumbOcc_DA_ASV == 3])
+Acc_Bac_HMVLGO1overlap_DA_ASV
+Acc_Bac_HMVLoverlap_DA_ASV <- Acc_Bac_HMVLoverlap_DA_ASV[! Acc_Bac_HMVLoverlap_DA_ASV %in% Acc_Bac_HMVLGO1overlap_DA_ASV]
+
+## Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA_VLHM <- prune_taxa(Acc_Bac_HMVLoverlap_DA_ASV, FP_unnormalized_bac_ps_ForDA_clean_RA)
+ps_RA_VLHM <- subset_samples(ps_RA_VLHM, Accession == "HM" | Accession == "VL")
+tax_table(ps_RA_VLHM)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA_VLHM <- psmelt(ps_RA_VLHM)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA_VLHM$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA_VLHM$Genus[na_genus] <- paste0("Uncl_", ps_RA_VLHM$Class[na_genus])
+ps_RA_VLHM$ASV_Genus <- paste(ps_RA_VLHM$OTU, ps_RA_VLHM$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA_VLHM,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA_VLHM <- merge(ps_RA_VLHM,
+                    otu_means[, c("OTU", "difference")],
+                    by = "OTU",
+                    all.x = TRUE)
+ps_RA_VLHM$Genus <- with(ps_RA_VLHM, reorder(Genus, difference))
+ps_RA_VLHM$OTU <- with(ps_RA_VLHM, reorder(OTU, -difference))
+```
+
+```{r, fig.height=4, fig.width=10}
+ggplot(ps_RA_VLHM, 
+       aes(x = Accession, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Accession), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Accession") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 10),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "right")
+```
+
+```{r, fig.height=3}
+ggplot(ps_RA_VLHM, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 5.2 Relative abundance of DA ASVs all data
+## ASVs detected by two DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_TwoTimes_DA_ASV.RData")
+
+## Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA <- prune_taxa(All_Bac_TwoTimes_DA_ASV, FP_unnormalized_bac_ps_ForDA_clean_RA)
+tax_table(ps_RA)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA <- psmelt(ps_RA)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA$Genus[na_genus] <- paste0("Uncl_", ps_RA$Class[na_genus])
+ps_RA$ASV_Genus <- paste(ps_RA$OTU, ps_RA$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA <- merge(ps_RA,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA$Genus <- with(ps_RA, reorder(Genus, difference))
+ps_RA$OTU <- with(ps_RA, reorder(OTU, -difference))
+```
+
+```{r, fig.height=12, fig.width=20}
+ggplot(ps_RA, 
+       aes(x = Accession, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Accession), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Accession") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = c(0.9, 0.1))
+```
+
+```{r, fig.height=8, fig.width=12}
+ggplot(ps_RA, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "none")
+```
+
+```{r, fig.height=5, fig.width=12}
+ggplot(ps_RA, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+## ASVs detected by three DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_ThreeTimes_DA_ASV.RData")
+
+## Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA <- prune_taxa(All_Bac_ThreeTimes_DA_ASV, FP_unnormalized_bac_ps_ForDA_clean_RA)
+tax_table(ps_RA)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA <- psmelt(ps_RA)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA$Genus[na_genus] <- paste0("Uncl_", ps_RA$Class[na_genus])
+ps_RA$ASV_Genus <- paste(ps_RA$OTU, ps_RA$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA <- merge(ps_RA,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA$Genus <- with(ps_RA, reorder(Genus, difference))
+ps_RA$OTU <- with(ps_RA, reorder(OTU, -difference))
+```
+
+```{r, fig.height=6, fig.width=8}
+ggplot(ps_RA, 
+       aes(x = Accession, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Accession), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Accession") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "right")
+```
+
+```{r, fig.height=6, fig.width=6}
+ggplot(ps_RA, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 10),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "none")
+```
+
+```{r, fig.height=4}
+ggplot(ps_RA, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 5.3 Relative abundance of DA ASVs HM
+## ASVs detected by two DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+## Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA <- prune_taxa(Acc_Bac_TwoTimes_DA_ASV$HM, FP_unnormalized_bac_ps_ForDA_clean_RA)
+ps_RA <- subset_samples(ps_RA, Accession == "HM")
+tax_table(ps_RA)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA <- psmelt(ps_RA)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA$Genus[na_genus] <- paste0("Uncl_", ps_RA$Class[na_genus])
+ps_RA$ASV_Genus <- paste(ps_RA$OTU, ps_RA$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA <- merge(ps_RA,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA$Genus <- with(ps_RA, reorder(Genus, difference))
+ps_RA$OTU <- with(ps_RA, reorder(OTU, -difference))
+```
+
+```{r, fig.height=30, fig.width=30}
+ggplot(ps_RA, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 1, color = "black"),
+        axis.title = element_text(size = 3),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 5),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "none")
+```
+
+```{r, fig.height=50, fig.width=20}
+ggplot(ps_RA, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+## ASVs detected by three DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_ThreeTimes_DA_ASV.RData")
+
+## Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA <- prune_taxa(Acc_Bac_ThreeTimes_DA_ASV$HM, FP_unnormalized_bac_ps_ForDA_clean_RA)
+ps_RA <- subset_samples(ps_RA, Accession == "HM")
+tax_table(ps_RA)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA <- psmelt(ps_RA)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA$Genus[na_genus] <- paste0("Uncl_", ps_RA$Class[na_genus])
+ps_RA$ASV_Genus <- paste(ps_RA$OTU, ps_RA$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA <- merge(ps_RA,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA$Genus <- with(ps_RA, reorder(Genus, difference))
+ps_RA$OTU <- with(ps_RA, reorder(OTU, -difference))
+```
+
+```{r, fig.height=10, fig.width=12}
+ggplot(ps_RA, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 4, color = "black"),
+        axis.title = element_text(size = 15),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 5),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "none")
+```
+
+```{r, fig.height=25, fig.width=15}
+ggplot(ps_RA, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+## ASVs detected filtered based on log2fold change
+ASVs detected by two tests and ancomWZ used for log2fold change
+
+### Data preperation
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+# load log2fold change values
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/ancomWZ_Bac_Acc.RData")
+
+# Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# number of ASVs with large log2Fold change
+summary(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb)
+length(ancomWZ_Bac_Acc$HM$res$lfc[abs(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) > 1, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$HM$res$lfc[(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) > 2, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$HM$res$lfc[(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) < -2, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$HM$res$lfc[(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) > 2.5, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$HM$res$lfc[(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) < -2.5, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$HM$res$lfc[(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) > 3, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$HM$res$lfc[(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) < -3, "Soil_conditioningMb" ])
+
+# ASVs with a log2fold change larger than 2.5 or smaller than -2.5
+ancomWZ_Bac_Acc_lfc_2.5 <- ancomWZ_Bac_Acc$HM$res$lfc[abs(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) > 2.5, ]
+HM_lfc_2.5_ancomWZ_DA_ASV <- ancomWZ_Bac_Acc_lfc_2.5$taxon
+save(HM_lfc_2.5_ancomWZ_DA_ASV, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/HM_lfc_2.5_ancomWZ_DA_ASV.RData")
+
+# ASVs with a log2fold change larger than 3 or smaller than -3
+ancomWZ_Bac_Acc_lfc_3 <- ancomWZ_Bac_Acc$HM$res$lfc[abs(ancomWZ_Bac_Acc$HM$res$lfc$Soil_conditioningMb) > 3, ]
+HM_lfc_3_ancomWZ_DA_ASV <- ancomWZ_Bac_Acc_lfc_3$taxon
+save(HM_lfc_3_ancomWZ_DA_ASV, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/HM_lfc_3_ancomWZ_DA_ASV.RData")
+
+# Subset phyloseq object
+ps_RA <- subset_samples(FP_unnormalized_bac_ps_ForDA_clean_RA, Accession == "HM")
+ps_RA_lfc_2.5 <- prune_taxa(ancomWZ_Bac_Acc_lfc_2.5$taxon, ps_RA)
+ps_RA_lfc_3 <- prune_taxa(ancomWZ_Bac_Acc_lfc_3$taxon, ps_RA)
+tax_table(ps_RA_lfc_2.5)[ , 2:6]
+tax_table(ps_RA_lfc_3)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA_lfc_2.5 <- psmelt(ps_RA_lfc_2.5)
+ps_RA_lfc_3 <- psmelt(ps_RA_lfc_3)
+
+# Identify rows where Genus is NA
+na_genus_2.5 <- is.na(ps_RA_lfc_2.5$Genus)
+na_genus_3 <- is.na(ps_RA_lfc_3$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name for 2.5
+ps_RA_lfc_2.5$Genus[na_genus_2.5] <- paste0("Uncl_", ps_RA_lfc_2.5$Class[na_genus_2.5])
+ps_RA_lfc_2.5$ASV_Genus <- paste(ps_RA_lfc_2.5$OTU, ps_RA_lfc_2.5$Genus, sep = "_")
+
+## Change order of ASVs depending on difference between soil treatments for 2.5
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA_lfc_2.5,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA_lfc_2.5 <- merge(ps_RA_lfc_2.5,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA_lfc_2.5$Genus <- with(ps_RA_lfc_2.5, reorder(Genus, difference))
+ps_RA_lfc_2.5$OTU <- with(ps_RA_lfc_2.5, reorder(OTU, -difference))
+
+# Replace those NAs with "Unclassified_" + Class name for 3
+ps_RA_lfc_3$Genus[na_genus_3] <- paste0("Uncl_", ps_RA_lfc_3$Class[na_genus_3])
+ps_RA_lfc_3$ASV_Genus <- paste(ps_RA_lfc_3$OTU, ps_RA_lfc_3$Genus, sep = "_")
+
+## Change order of ASVs depending on difference between soil treatments for 3
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA_lfc_3,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA_lfc_3 <- merge(ps_RA_lfc_3,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA_lfc_3$Genus <- with(ps_RA_lfc_3, reorder(Genus, difference))
+ps_RA_lfc_3$OTU <- with(ps_RA_lfc_3, reorder(OTU, -difference))
+```
+
+### Grapth lfc of 2.5
+```{r, fig.height=10, fig.width=12}
+ggplot(ps_RA_lfc_2.5, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 7, color = "black"),
+        axis.title = element_text(size = 12),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 8),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.position = c(0.9, 0.1))
+```
+
+```{r, fig.height=10, fig.width=12}
+ggplot(ps_RA_lfc_2.5, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+
+### Grapth lfc of 3
+```{r, fig.height=7, fig.width=10}
+ggplot(ps_RA_lfc_3, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 7, color = "black"),
+        axis.title = element_text(size = 12),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 8),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.position = c(0.9, 0.1))
+```
+
+```{r, fig.height=6, fig.width=10}
+ggplot(ps_RA_lfc_3, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+# 5.4 Relative abundance of DA ASVs VL
+## ASVs detected by two DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+## Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA <- prune_taxa(Acc_Bac_TwoTimes_DA_ASV$VL, FP_unnormalized_bac_ps_ForDA_clean_RA)
+ps_RA <- subset_samples(ps_RA, Accession == "VL")
+tax_table(ps_RA)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA <- psmelt(ps_RA)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA$Genus[na_genus] <- paste0("Uncl_", ps_RA$Class[na_genus])
+ps_RA$ASV_Genus <- paste(ps_RA$OTU, ps_RA$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA <- merge(ps_RA,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA$Genus <- with(ps_RA, reorder(Genus, difference))
+ps_RA$OTU <- with(ps_RA, reorder(OTU, -difference))
+```
+
+```{r, fig.height=12, fig.width=15}
+ggplot(ps_RA, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 1, color = "black"),
+        axis.title = element_text(size = 3),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 5),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "none")
+```
+
+```{r, fig.height=35, fig.width = 12}
+ggplot(ps_RA, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+## ASVs detected by three DA tests
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_ThreeTimes_DA_ASV.RData")
+
+## Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# Subset phyloseq object
+ps_RA <- prune_taxa(Acc_Bac_ThreeTimes_DA_ASV$VL, FP_unnormalized_bac_ps_ForDA_clean_RA)
+ps_RA <- subset_samples(ps_RA, Accession == "VL")
+tax_table(ps_RA)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA <- psmelt(ps_RA)
+
+# Identify rows where Genus is NA
+na_genus <- is.na(ps_RA$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name
+ps_RA$Genus[na_genus] <- paste0("Uncl_", ps_RA$Class[na_genus])
+ps_RA$ASV_Genus <- paste(ps_RA$OTU, ps_RA$Genus, sep = "_")
+
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "g__", "") # remove g__
+#ps_RA_VLHM$Genus <- str_replace_all(ps_RA_VLHM$Genus, "_c__", "\n") # remove c__
+#ps_RA_VLHM[ps_RA_VLHM$OTU == "bASV_831", "OTU_Genus"] <- "bASV_831 Burkholderia- *"
+
+## Change order of ASVs depending on difference between soil treatments
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA <- merge(ps_RA,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA$Genus <- with(ps_RA, reorder(Genus, difference))
+ps_RA$OTU <- with(ps_RA, reorder(OTU, -difference))
+```
+
+```{r, fig.height=6, fig.width=10}
+ggplot(ps_RA, 
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 5, color = "black"),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 8),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15),
+        legend.position = "none")
+```
+
+```{r, fig.height=12, fig.width=16}
+ggplot(ps_RA, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
+
+## ASVs detected filtered based on log2fold change
+ASVs detected by two tests and ancomWZ used for log2fold change
+
+### Data preperation
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_unnormalized_bac_ps_ForDA_clean.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+# load log2fold change values
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/ancomWZ_Bac_Acc.RData")
+
+# Calculate relative abundance
+FP_unnormalized_bac_ps_ForDA_clean_RA <- transform_sample_counts(FP_unnormalized_bac_ps_ForDA_clean, function(x) x / sum(x))
+
+# number of ASVs with large log2Fold change
+summary(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb)
+length(ancomWZ_Bac_Acc$VL$res$lfc[abs(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) > 1, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$VL$res$lfc[(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) > 2, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$VL$res$lfc[(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) < -2, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$VL$res$lfc[(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) > 2.5, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$VL$res$lfc[(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) < -2.5, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$VL$res$lfc[(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) > 3, "Soil_conditioningMb" ])
+length(ancomWZ_Bac_Acc$VL$res$lfc[(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) < -3, "Soil_conditioningMb" ])
+
+# ASVs with a log2fold change larger than 2.5 or smaller than -2.5
+ancomWZ_Bac_Acc_lfc_2.5 <- ancomWZ_Bac_Acc$VL$res$lfc[abs(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) > 2.5, ]
+VL_lfc_2.5_ancomWZ_DA_ASV <- ancomWZ_Bac_Acc_lfc_2.5$taxon
+save(VL_lfc_2.5_ancomWZ_DA_ASV, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/VL_lfc_2.5_ancomWZ_DA_ASV.RData")
+
+
+# ASVs with a log2fold change larger than 3 or smaller than -3
+ancomWZ_Bac_Acc_lfc_3 <- ancomWZ_Bac_Acc$VL$res$lfc[abs(ancomWZ_Bac_Acc$VL$res$lfc$Soil_conditioningMb) > 3, ]
+VL_lfc_3_ancomWZ_DA_ASV <- ancomWZ_Bac_Acc_lfc_3$taxon
+save(VL_lfc_3_ancomWZ_DA_ASV, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/VL_lfc_3_ancomWZ_DA_ASV.RData")
+
+# Subset phyloseq object
+ps_RA <- subset_samples(FP_unnormalized_bac_ps_ForDA_clean_RA, Accession == "VL")
+ps_RA_lfc_2.5 <- prune_taxa(ancomWZ_Bac_Acc_lfc_2.5$taxon, ps_RA)
+ps_RA_lfc_3 <- prune_taxa(ancomWZ_Bac_Acc_lfc_3$taxon, ps_RA)
+tax_table(ps_RA_lfc_2.5)[ , 2:6]
+tax_table(ps_RA_lfc_3)[ , 2:6]
+
+## Phyloseq object to data frame with relative abundance, meta data and taxonomy
+ps_RA_lfc_2.5 <- psmelt(ps_RA_lfc_2.5)
+ps_RA_lfc_3 <- psmelt(ps_RA_lfc_3)
+
+# Identify rows where Genus is NA
+na_genus_2.5 <- is.na(ps_RA_lfc_2.5$Genus)
+na_genus_3 <- is.na(ps_RA_lfc_3$Genus)
+
+# Replace those NAs with "Unclassified_" + Class name for 2.5
+ps_RA_lfc_2.5$Genus[na_genus_2.5] <- paste0("Uncl_", ps_RA_lfc_2.5$Class[na_genus_2.5])
+ps_RA_lfc_2.5$ASV_Genus <- paste(ps_RA_lfc_2.5$OTU, ps_RA_lfc_2.5$Genus, sep = "_")
+
+## Change order of ASVs depending on difference between soil treatments for 2.5
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA_lfc_2.5,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA_lfc_2.5 <- merge(ps_RA_lfc_2.5,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA_lfc_2.5$Genus <- with(ps_RA_lfc_2.5, reorder(Genus, difference))
+ps_RA_lfc_2.5$OTU <- with(ps_RA_lfc_2.5, reorder(OTU, -difference))
+
+# Replace those NAs with "Unclassified_" + Class name for 3
+ps_RA_lfc_3$Genus[na_genus_3] <- paste0("Uncl_", ps_RA_lfc_3$Class[na_genus_3])
+ps_RA_lfc_3$ASV_Genus <- paste(ps_RA_lfc_3$OTU, ps_RA_lfc_3$Genus, sep = "_")
+
+## Change order of ASVs depending on difference between soil treatments for 3
+otu_means <- aggregate(Abundance ~ OTU + Soil_conditioning,
+                       data = ps_RA_lfc_3,
+                       FUN = mean)
+otu_means <- reshape(otu_means, # Change configuration df
+                     timevar = "Soil_conditioning",
+                     idvar = "OTU",
+                     direction = "wide")
+otu_means$difference <- otu_means$Abundance.Mb - otu_means$Abundance.Co
+ps_RA_lfc_3 <- merge(ps_RA_lfc_3,
+                otu_means[, c("OTU", "difference")],
+                by = "OTU",
+                all.x = TRUE)
+ps_RA_lfc_3$Genus <- with(ps_RA_lfc_3, reorder(Genus, difference))
+ps_RA_lfc_3$OTU <- with(ps_RA_lfc_3, reorder(OTU, -difference))
+```
+
+### Grapth lfc of 2.5
+```{r, fig.height=7, fig.width=9.5}
+ggplot(ps_RA_lfc_2.5,
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 7, color = "black"),
+        axis.title = element_text(size = 12),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 8),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.position = c(0.9, 0.1))
+```
+
+```{r, fig.height=7, fig.width=8}
+ggplot(ps_RA_lfc_2.5, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+
+### Grapth lfc of 3
+```{r, fig.height=5, fig.width=7}
+ggplot(ps_RA_lfc_3,
+       aes(x = Soil_conditioning, y = Abundance, fill = Soil_conditioning)) +
+  facet_wrap(~ ASV_Genus, scales = "free_y"#,
+             #labeller = as_labeller(otu_labels)
+             ) +
+  stat_boxplot(aes(y = Abundance, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.3,    # horizontal jitter (x-direction)
+                                              jitter.height = 0, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point", 
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment",
+                    labels = c("CTRL", ~italic("M. brassicae"))) +
+  labs(y = "Relative Abundance",
+       x = "Soil Conditioning") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 5, hjust = 0),
+        axis.text = element_text(size = 10, color = "black"),
+        axis.title = element_text(size = 12),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 8),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.position = "right")
+```
+
+```{r, fig.height=4, fig.width=8}
+ggplot(ps_RA_lfc_3, 
+       aes(y = ASV_Genus, x = Abundance, fill = Soil_conditioning)) +
+  stat_boxplot(aes(x = Abundance, y = ASV_Genus), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               position = position_dodge(0.75),
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) +
+  geom_jitter(position = position_jitterdodge(jitter.width = 0,    # horizontal jitter (x-direction)
+                                              #jitter.height = 0.2, # vertical jitter (y-direction, since flipped)
+                                              dodge.width = 0.75),   # match boxplot dodge width
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(aes(group = Soil_conditioning),
+               fun = mean, 
+               geom = "point",
+               position = position_dodge(0.75),
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white dimond
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +   # extra space (%) below and above min and max data point
+  expand_limits(y = 0) + # start y axis at 0
+  scale_fill_manual(values = c("#56B4E9", "#009E73"),
+                    name = "Soil treatment") + # Manually change the colors of the bars. You need to define fill in second line of the plot script to 
+  labs(y = "Differetnial Abundant ASVs",
+       x = "Relative Abundance") + 
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```

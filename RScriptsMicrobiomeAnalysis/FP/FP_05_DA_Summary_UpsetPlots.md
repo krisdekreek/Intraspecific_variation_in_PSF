@@ -1,0 +1,984 @@
+---
+title: "FP_05_differential_abundance_Summary_Results - Upset plots"
+author: "Kris de Kreek"
+date: "2026-02-16"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+This script is adapted from a script form Melissa Uribe Acosta. Extra input comes from a script of Pedro Beschore da Costa.   
+   
+   
+Tutorials   
+- [Heatmap for final plot](http://rstudio-pubs-static.s3.amazonaws.com/288398_185f2889a5f641c6b9aa7b14fa15b635.html)
+   
+   
+# 5.0 load libraries, improve memory use and subset objects for the desired treatment comparisons
+### Load libraries
+
+``` r
+R.version$version.string # prints R version
+```
+
+```
+## [1] "R version 4.5.1 (2025-06-13 ucrt)"
+```
+
+``` r
+library(phyloseq)
+packageVersion("phyloseq")
+```
+
+```
+## [1] '1.52.0'
+```
+
+``` r
+library(metamisc) #for phyloseq_sep_variable (and more?)
+packageVersion("metamisc")
+```
+
+```
+## [1] '0.4.0'
+```
+
+``` r
+library(DESeq2)
+packageVersion("DESeq2")
+```
+
+```
+## [1] '1.48.2'
+```
+
+``` r
+library(zinbwave)
+packageVersion("zinbwave")
+```
+
+```
+## [1] '1.30.0'
+```
+
+``` r
+library(UpSetR)
+packageVersion("UpSetR")
+```
+
+```
+## [1] '1.4.0'
+```
+
+``` r
+library(tuple)
+packageVersion("tuple")
+```
+
+```
+## [1] '0.4.2'
+```
+
+``` r
+library(ggpubr)
+packageVersion("ggpubr")
+```
+
+```
+## [1] '0.6.2'
+```
+
+``` r
+library(stringr)
+packageVersion("stringr")
+```
+
+```
+## [1] '1.5.2'
+```
+
+``` r
+library(pheatmap)
+packageVersion("pheatmap")
+```
+
+```
+## [1] '1.0.13'
+```
+
+``` r
+library(ggVennDiagram)
+packageVersion("ggVennDiagram")
+```
+
+```
+## [1] '1.5.4'
+```
+
+
+# 5.4 Upset ASVs detected by each DA test
+## 5.4.1 Combining DA tests per accession at ASV level
+
+``` r
+## Load outputs DESeq
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_stddds2_Wald_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_stddds2_LRT_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_zinbWald_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_zinbLRT_Acc_Bac.RData")
+
+## Load output Ancom
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/fdr_ancomWZ_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/fdr_ancomNoZ_Acc_Bac.RData")
+
+## From each data frame, extract the ASV IDs caught by each test
+Acc_Bac_DESeqLRT_ASVs <- lapply(sigtab_stddds2_LRT_Acc_Bac, function(x) rownames(x))
+Acc_Bac_DESeqWald_ASVs <- lapply(sigtab_stddds2_Wald_Acc_Bac, function(x) rownames(x))
+Acc_Bac_zinbLRT_ASVs <- lapply(sigtab_zinbLRT_Acc_Bac, function(x) rownames(x))
+Acc_Bac_zinbWald_ASVs <- lapply(sigtab_zinbWald_Acc_Bac, function(x) rownames(x))
+Acc_Bac_ancomWZ_ASVs <- lapply(fdr_ancomWZ_Acc_Bac, function(x) as.vector(x[,'Species']))
+Acc_Bac_ancomNoZ_ASVs <- lapply(fdr_ancomNoZ_Acc_Bac, function(x) as.vector(x[,'Species']))
+
+## use upset function. make sure to have names of the objects inside the lists!
+Acc_Bac_upset_6DAtests <- mapply(function(s,t,w,x,y,z){
+  input<-list(s,t,w,x,y,z)
+  names(input)<- c("Std_DESeq_LRT",
+                   "Std_DESeq_Wald", # adds names to the list of tests
+                   "zinb_DESeq_LRT",
+                   "zinb_DESeq_Wald",
+                   "ancomWZ", 
+                   "ancomNoZ" )
+output <- upset(fromList(input), order.by = "freq", nsets = 20, nintersects = 100) # text.scale = 3, set_size.angles = 0, set_size.show = FALSE, set_size.numbers_size = NULL
+return(output)
+  },
+  s = Acc_Bac_DESeqLRT_ASVs,
+  t = Acc_Bac_DESeqWald_ASVs,
+  w = Acc_Bac_zinbLRT_ASVs,
+  x = Acc_Bac_zinbWald_ASVs,
+  y = Acc_Bac_ancomWZ_ASVs,
+  z = Acc_Bac_ancomNoZ_ASVs, 
+  SIMPLIFY = FALSE)
+```
+
+```
+## Warning: `aes_string()` was deprecated in ggplot2 3.0.0.
+## ℹ Please use tidy evaluation idioms with `aes()`.
+## ℹ See also `vignette("ggplot2-in-packages")` for more information.
+## ℹ The deprecated feature was likely used in the UpSetR package.
+##   Please report the issue to the authors.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+```
+
+```
+## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+## ℹ Please use `linewidth` instead.
+## ℹ The deprecated feature was likely used in the UpSetR package.
+##   Please report the issue to the authors.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+```
+
+```
+## Warning: The `size` argument of `element_line()` is deprecated as of ggplot2 3.4.0.
+## ℹ Please use the `linewidth` argument instead.
+## ℹ The deprecated feature was likely used in the UpSetR package.
+##   Please report the issue to the authors.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+```
+
+``` r
+Acc_Bac_upset_6DAtests
+```
+
+```
+## $VL
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
+
+```
+## 
+## $CD
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-2-2.png)<!-- -->
+
+```
+## 
+## $RI
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-2-3.png)<!-- -->
+
+```
+## 
+## $HM
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-2-4.png)<!-- -->
+
+```
+## 
+## $GO1
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-2-5.png)<!-- -->
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+## 5.4.2 DA test from All data at ASV level
+
+``` r
+## Load outputs DESeq
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_stddds2_Wald_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_stddds2_LRT_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_zinbWald_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ASVLevel/sigtab_zinbLRT_All_Bac.RData")
+
+## Load output Ancom
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/fdr_ancomWZ_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/fdr_ancomNoZ_All_Bac.RData")
+
+## From each data frame, extract the ASV IDs caught by each test
+All_Bac_DESeqLRT_ASVs <- rownames(sigtab_stddds2_LRT_All_Bac)
+All_Bac_DESeqWald_ASVs <- rownames(sigtab_stddds2_Wald_All_Bac)
+All_Bac_zinbLRT_ASVs <- rownames(sigtab_zinbLRT_All_Bac)
+All_Bac_zinbWald_ASVs <- rownames(sigtab_zinbWald_All_Bac)
+All_Bac_ancomWZ_ASVs <- as.vector(fdr_ancomWZ_All_Bac[,'Species'])
+All_Bac_ancomNoZ_ASVs <- as.vector(fdr_ancomNoZ_All_Bac[,'Species'])
+
+## use upset function. make sure to have names of the objects inside the lists!
+input <- list(All_Bac_DESeqLRT_ASVs, All_Bac_DESeqWald_ASVs, All_Bac_zinbLRT_ASVs, All_Bac_zinbWald_ASVs, All_Bac_ancomWZ_ASVs, All_Bac_ancomNoZ_ASVs)
+names(input) <- c("Std_DESeq_LRT",
+                 "Std_DESeq_Wald", # adds names to the list of tests
+                 "zinb_DESeq_LRT",
+                 "zinb_DESeq_Wald",
+                 "ancomWZ", 
+                 "ancomNoZ")
+
+All_Bac_upset_5DAtests <- upset(fromList(input), order.by = "freq", nsets = 12, nintersects = 100) # text.scale = 3, set_size.angles = 0, set_size.show = FALSE, set_size.numbers_size = NULL
+All_Bac_upset_5DAtests
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+## 5.4.3 Combining DA tests per accession at Class level
+
+``` r
+## Load outputs DESeq
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_stddds2_Wald_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_stddds2_LRT_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_zinbWald_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_zinbLRT_Acc_Bac.RData")
+
+## Load output Ancom
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ClassLevel/fdr_ancomWZ_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ClassLevel/fdr_ancomNoZ_Acc_Bac.RData")
+
+## From each data frame, extract the Class IDs caught by each test
+Acc_Bac_DESeqLRT_Class <- lapply(sigtab_stddds2_LRT_Acc_Bac, function(x) rownames(x))
+#Acc_Bac_DESeqLRT_Class <- lapply(Acc_Bac_DESeqLRT_Class, function(x) x[lengths(x) > 0])
+#Acc_Bac_DESeqLRT_Class <- Acc_Bac_DESeqLRT_Class[length(Acc_Bac_DESeqLRT_Class) > 0]
+
+Acc_Bac_DESeqWald_Class <- lapply(sigtab_stddds2_Wald_Acc_Bac, function(x) rownames(x))
+Acc_Bac_zinbLRT_Class <- lapply(sigtab_zinbLRT_Acc_Bac, function(x) rownames(x))
+Acc_Bac_zinbWald_Class <- lapply(sigtab_zinbWald_Acc_Bac, function(x) rownames(x))
+Acc_Bac_ancomWZ_Class <- lapply(fdr_ancomWZ_Acc_Bac, function(x) as.vector(x[,'Species']))
+Acc_Bac_ancomNoZ_Class <- lapply(fdr_ancomNoZ_Acc_Bac, function(x) as.vector(x[,'Species']))
+
+Alltests <- list(Acc_Bac_DESeqLRT_Class,Acc_Bac_DESeqWald_Class, Acc_Bac_zinbLRT_Class, Acc_Bac_zinbWald_Class, Acc_Bac_ancomWZ_Class, Acc_Bac_ancomNoZ_Class)
+names(Alltests) <- c("Acc_Bac_DESeqLRT_Class", "Acc_Bac_DESeqWald_Class", "Acc_Bac_zinbLRT_Class", "Acc_Bac_zinbWald_Class", "Acc_Bac_ancomWZ_Class", "Acc_Bac_ancomNoZ_Class")
+#Alltests_clean <- lapply(Alltests, function(x) x[lengths(x) > 0])
+
+# print length of each object in list
+lapply(Alltests, function(x) {lapply(x, function(y) length(y))})
+```
+
+```
+## $Acc_Bac_DESeqLRT_Class
+## $Acc_Bac_DESeqLRT_Class$VL
+## [1] 1
+## 
+## $Acc_Bac_DESeqLRT_Class$CD
+## [1] 1
+## 
+## $Acc_Bac_DESeqLRT_Class$RI
+## [1] 0
+## 
+## $Acc_Bac_DESeqLRT_Class$HM
+## [1] 12
+## 
+## $Acc_Bac_DESeqLRT_Class$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_DESeqWald_Class
+## $Acc_Bac_DESeqWald_Class$VL
+## [1] 1
+## 
+## $Acc_Bac_DESeqWald_Class$CD
+## [1] 1
+## 
+## $Acc_Bac_DESeqWald_Class$RI
+## [1] 0
+## 
+## $Acc_Bac_DESeqWald_Class$HM
+## [1] 12
+## 
+## $Acc_Bac_DESeqWald_Class$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_zinbLRT_Class
+## $Acc_Bac_zinbLRT_Class$VL
+## [1] 1
+## 
+## $Acc_Bac_zinbLRT_Class$CD
+## [1] 1
+## 
+## $Acc_Bac_zinbLRT_Class$RI
+## [1] 0
+## 
+## $Acc_Bac_zinbLRT_Class$HM
+## [1] 13
+## 
+## $Acc_Bac_zinbLRT_Class$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_zinbWald_Class
+## $Acc_Bac_zinbWald_Class$VL
+## [1] 0
+## 
+## $Acc_Bac_zinbWald_Class$CD
+## [1] 1
+## 
+## $Acc_Bac_zinbWald_Class$RI
+## [1] 0
+## 
+## $Acc_Bac_zinbWald_Class$HM
+## [1] 3
+## 
+## $Acc_Bac_zinbWald_Class$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_ancomWZ_Class
+## $Acc_Bac_ancomWZ_Class$VL
+## [1] 12
+## 
+## $Acc_Bac_ancomWZ_Class$CD
+## [1] 10
+## 
+## $Acc_Bac_ancomWZ_Class$RI
+## [1] 20
+## 
+## $Acc_Bac_ancomWZ_Class$HM
+## [1] 26
+## 
+## $Acc_Bac_ancomWZ_Class$GO1
+## [1] 12
+## 
+## 
+## $Acc_Bac_ancomNoZ_Class
+## $Acc_Bac_ancomNoZ_Class$VL
+## [1] 4
+## 
+## $Acc_Bac_ancomNoZ_Class$CD
+## [1] 2
+## 
+## $Acc_Bac_ancomNoZ_Class$RI
+## [1] 4
+## 
+## $Acc_Bac_ancomNoZ_Class$HM
+## [1] 12
+## 
+## $Acc_Bac_ancomNoZ_Class$GO1
+## [1] 0
+```
+
+``` r
+#upset((Alltests_clean))
+
+# ## use upset function. make sure to have names of the objects inside the lists!
+# Acc_Bac_upset_6DAtests <- mapply(function(s,t,w,x,y,z){
+#   input<-list(s,t,w,x,y,z)
+#   names(input)<- c("Std_DESeq_LRT",
+#                    "Std_DESeq_Wald", # adds names to the list of tests
+#                    "zinb_DESeq_LRT",
+#                    "zinb_DESeq_Wald",
+#                    "ancomWZ",
+#                    "ancomNoZ")
+# output <- upset(fromList(input), order.by = "freq", nsets = 20, nintersects = 100) # text.scale = 3, set_size.angles = 0, set_size.show = FALSE, set_size.numbers_size = NULL
+# return(output)
+#   },
+#   s = Alltests_clean[1],
+#   t = Alltests_clean[2],
+#   w = Alltests_clean[3],
+#   x = Alltests_clean[4],
+#   y = Alltests_clean[5],
+#   z = Alltests_clean[6],
+#   SIMPLIFY = FALSE)
+# 
+# Acc_Bac_upset_6DAtests
+```
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+## 5.4.4 DA test from All data at Class level
+
+``` r
+## Load outputs DESeq
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_stddds2_Wald_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_stddds2_LRT_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_zinbWald_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_ClassLevel/sigtab_zinbLRT_All_Bac.RData")
+
+## Load output Ancom
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ClassLevel/fdr_ancomWZ_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ClassLevel/fdr_ancomNoZ_All_Bac.RData")
+
+## From each data frame, extract the Class IDs caught by each test
+All_Bac_DESeqLRT_Class <- rownames(sigtab_stddds2_LRT_All_Bac)
+All_Bac_DESeqWald_Class <- rownames(sigtab_stddds2_Wald_All_Bac)
+All_Bac_zinbLRT_Class <- rownames(sigtab_zinbLRT_All_Bac)
+All_Bac_zinbWald_Class <- rownames(sigtab_zinbWald_All_Bac)
+All_Bac_ancomWZ_Class <- as.vector(fdr_ancomWZ_All_Bac[,'Species'])
+All_Bac_ancomNoZ_Class <- as.vector(fdr_ancomNoZ_All_Bac[,'Species'])
+
+Alltests <- list(All_Bac_DESeqLRT_Class, All_Bac_DESeqWald_Class, All_Bac_zinbLRT_Class, All_Bac_zinbWald_Class, All_Bac_ancomWZ_Class, All_Bac_ancomNoZ_Class)
+names(Alltests) <- c("All_Bac_DESeqLRT_Class", "All_Bac_DESeqWald_Class", "All_Bac_zinbLRT_Class", "All_Bac_zinbWald_Class", "All_Bac_ancomWZ_Class", "All_Bac_ancomNoZ_Class")
+
+# print length of each object in list
+lapply(Alltests, function(x) {length(x)})
+```
+
+```
+## $All_Bac_DESeqLRT_Class
+## [1] 0
+## 
+## $All_Bac_DESeqWald_Class
+## [1] 0
+## 
+## $All_Bac_zinbLRT_Class
+## [1] 0
+## 
+## $All_Bac_zinbWald_Class
+## [1] 0
+## 
+## $All_Bac_ancomWZ_Class
+## [1] 5
+## 
+## $All_Bac_ancomNoZ_Class
+## [1] 3
+```
+
+``` r
+# ## use upset function. make sure to have names of the objects inside the lists!
+# input <- list(All_Bac_DESeqLRT_Class, All_Bac_DESeqWald_Class, All_Bac_zinbLRT_Class, All_Bac_zinbWald_Class, All_Bac_ancomWZ_Class, All_Bac_ancomNoZ_Class)
+# names(input) <- c("Std_DESeq_LRT",
+#                  "Std_DESeq_Wald", # adds names to the list of tests
+#                  "zinb_DESeq_LRT",
+#                  "zinb_DESeq_Wald",
+#                  "ancomWZ",
+#                  "ancomNoZ")
+# 
+# All_Bac_upset_5DAtests <- upset(fromList(input), order.by = "freq", nsets = 12, nintersects = 100) # text.scale = 3, set_size.angles = 0, set_size.show = FALSE, set_size.numbers_size = NULL
+# All_Bac_upset_5DAtests
+```
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+## 5.4.5 Combining DA tests per accession at Phylum level
+
+``` r
+## Load outputs DESeq
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_stddds2_Wald_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_stddds2_LRT_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_zinbWald_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_zinbLRT_Acc_Bac.RData")
+
+## Load output Ancom
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_PhylumLevel/fdr_ancomWZ_Acc_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_PhylumLevel/fdr_ancomNoZ_Acc_Bac.RData")
+
+## From each data frame, extract the Phylum IDs caught by each test
+Acc_Bac_DESeqLRT_Phylum <- lapply(sigtab_stddds2_LRT_Acc_Bac, function(x) rownames(x))
+#Acc_Bac_DESeqLRT_Phylum <- lapply(Acc_Bac_DESeqLRT_Phylum, function(x) x[lengths(x) > 0])
+#Acc_Bac_DESeqLRT_Phylum <- Acc_Bac_DESeqLRT_Phylum[length(Acc_Bac_DESeqLRT_Phylum) > 0]
+
+Acc_Bac_DESeqWald_Phylum <- lapply(sigtab_stddds2_Wald_Acc_Bac, function(x) rownames(x))
+Acc_Bac_zinbLRT_Phylum <- lapply(sigtab_zinbLRT_Acc_Bac, function(x) rownames(x))
+Acc_Bac_zinbWald_Phylum <- lapply(sigtab_zinbWald_Acc_Bac, function(x) rownames(x))
+Acc_Bac_ancomWZ_Phylum <- lapply(fdr_ancomWZ_Acc_Bac, function(x) as.vector(x[,'Species']))
+Acc_Bac_ancomNoZ_Phylum <- lapply(fdr_ancomNoZ_Acc_Bac, function(x) as.vector(x[,'Species']))
+
+Alltests <- list(Acc_Bac_DESeqLRT_Phylum,Acc_Bac_DESeqWald_Phylum, Acc_Bac_zinbLRT_Phylum, Acc_Bac_zinbWald_Phylum, Acc_Bac_ancomWZ_Phylum, Acc_Bac_ancomNoZ_Phylum)
+#Alltests_clean <- lapply(Alltests, function(x) x[lengths(x) > 0])
+names(Alltests) <- c("Acc_Bac_DESeqLRT_Phylum", "Acc_Bac_DESeqWald_Phylum", "Acc_Bac_zinbLRT_Phylum", "Acc_Bac_zinbWald_Phylum", "Acc_Bac_ancomWZ_Phylum", "Acc_Bac_ancomNoZ_Phylum")
+
+# print length of each object in list
+lapply(Alltests, function(x) {lapply(x, function(y) length(y))})
+```
+
+```
+## $Acc_Bac_DESeqLRT_Phylum
+## $Acc_Bac_DESeqLRT_Phylum$VL
+## [1] 0
+## 
+## $Acc_Bac_DESeqLRT_Phylum$CD
+## [1] 1
+## 
+## $Acc_Bac_DESeqLRT_Phylum$RI
+## [1] 0
+## 
+## $Acc_Bac_DESeqLRT_Phylum$HM
+## [1] 2
+## 
+## $Acc_Bac_DESeqLRT_Phylum$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_DESeqWald_Phylum
+## $Acc_Bac_DESeqWald_Phylum$VL
+## [1] 0
+## 
+## $Acc_Bac_DESeqWald_Phylum$CD
+## [1] 1
+## 
+## $Acc_Bac_DESeqWald_Phylum$RI
+## [1] 0
+## 
+## $Acc_Bac_DESeqWald_Phylum$HM
+## [1] 4
+## 
+## $Acc_Bac_DESeqWald_Phylum$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_zinbLRT_Phylum
+## $Acc_Bac_zinbLRT_Phylum$VL
+## [1] 0
+## 
+## $Acc_Bac_zinbLRT_Phylum$CD
+## [1] 3
+## 
+## $Acc_Bac_zinbLRT_Phylum$RI
+## [1] 0
+## 
+## $Acc_Bac_zinbLRT_Phylum$HM
+## [1] 2
+## 
+## $Acc_Bac_zinbLRT_Phylum$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_zinbWald_Phylum
+## $Acc_Bac_zinbWald_Phylum$VL
+## [1] 0
+## 
+## $Acc_Bac_zinbWald_Phylum$CD
+## [1] 1
+## 
+## $Acc_Bac_zinbWald_Phylum$RI
+## [1] 0
+## 
+## $Acc_Bac_zinbWald_Phylum$HM
+## [1] 0
+## 
+## $Acc_Bac_zinbWald_Phylum$GO1
+## [1] 0
+## 
+## 
+## $Acc_Bac_ancomWZ_Phylum
+## $Acc_Bac_ancomWZ_Phylum$VL
+## [1] 5
+## 
+## $Acc_Bac_ancomWZ_Phylum$CD
+## [1] 9
+## 
+## $Acc_Bac_ancomWZ_Phylum$RI
+## [1] 8
+## 
+## $Acc_Bac_ancomWZ_Phylum$HM
+## [1] 12
+## 
+## $Acc_Bac_ancomWZ_Phylum$GO1
+## [1] 4
+## 
+## 
+## $Acc_Bac_ancomNoZ_Phylum
+## $Acc_Bac_ancomNoZ_Phylum$VL
+## [1] 2
+## 
+## $Acc_Bac_ancomNoZ_Phylum$CD
+## [1] 3
+## 
+## $Acc_Bac_ancomNoZ_Phylum$RI
+## [1] 4
+## 
+## $Acc_Bac_ancomNoZ_Phylum$HM
+## [1] 5
+## 
+## $Acc_Bac_ancomNoZ_Phylum$GO1
+## [1] 0
+```
+
+``` r
+#upset((Alltests_clean))
+
+# ## use upset function. make sure to have names of the objects inside the lists!
+# Acc_Bac_upset_6DAtests <- mapply(function(s,t,w,x,y,z){
+#   input<-list(s,t,w,x,y,z)
+#   names(input)<- c("Std_DESeq_LRT",
+#                    "Std_DESeq_Wald", # adds names to the list of tests
+#                    "zinb_DESeq_LRT",
+#                    "zinb_DESeq_Wald",
+#                    "ancomWZ",
+#                    "ancomNoZ")
+# output <- upset(fromList(input), order.by = "freq", nsets = 20, nintersects = 100) # text.scale = 3, set_size.angles = 0, set_size.show = FALSE, set_size.numbers_size = NULL
+# return(output)
+#   },
+#   s = Alltests_clean[1],
+#   t = Alltests_clean[2],
+#   w = Alltests_clean[3],
+#   x = Alltests_clean[4],
+#   y = Alltests_clean[5],
+#   z = Alltests_clean[6],
+#   SIMPLIFY = FALSE)
+# 
+# Acc_Bac_upset_6DAtests
+```
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+## 5.4.6 DA test from All data at Phylum level
+
+``` r
+## Load outputs DESeq
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_stddds2_Wald_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_stddds2_LRT_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_zinbWald_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_DESeq_PhylumLevel/sigtab_zinbLRT_All_Bac.RData")
+
+## Load output Ancom
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_PhylumLevel/fdr_ancomWZ_All_Bac.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_PhylumLevel/fdr_ancomNoZ_All_Bac.RData")
+
+## From each data frame, extract the Phylum IDs caught by each test
+All_Bac_DESeqLRT_Phylum <- rownames(sigtab_stddds2_LRT_All_Bac)
+All_Bac_DESeqWald_Phylum <- rownames(sigtab_stddds2_Wald_All_Bac)
+All_Bac_zinbLRT_Phylum <- rownames(sigtab_zinbLRT_All_Bac)
+All_Bac_zinbWald_Phylum <- rownames(sigtab_zinbWald_All_Bac)
+All_Bac_ancomWZ_Phylum <- as.vector(fdr_ancomWZ_All_Bac[,'Species'])
+All_Bac_ancomNoZ_Phylum <- as.vector(fdr_ancomNoZ_All_Bac[,'Species'])
+
+Alltests <- list(All_Bac_DESeqLRT_Phylum,All_Bac_DESeqWald_Phylum, All_Bac_zinbLRT_Phylum, All_Bac_zinbWald_Phylum, All_Bac_ancomWZ_Phylum, All_Bac_ancomNoZ_Phylum)
+names(Alltests) <- c("All_Bac_DESeqLRT_Phylum", "All_Bac_DESeqWald_Phylum", "All_Bac_zinbLRT_Phylum", "All_Bac_zinbWald_Phylum", "All_Bac_ancomWZ_Phylum", "All_Bac_ancomNoZ_Phylum")
+
+# print length of each object in list
+lapply(Alltests, function(x) {length(x)})
+```
+
+```
+## $All_Bac_DESeqLRT_Phylum
+## [1] 0
+## 
+## $All_Bac_DESeqWald_Phylum
+## [1] 0
+## 
+## $All_Bac_zinbLRT_Phylum
+## [1] 0
+## 
+## $All_Bac_zinbWald_Phylum
+## [1] 0
+## 
+## $All_Bac_ancomWZ_Phylum
+## [1] 1
+## 
+## $All_Bac_ancomNoZ_Phylum
+## [1] 1
+```
+
+``` r
+# ## use upset function. make sure to have names of the objects inside the lists!
+# input <- list(All_Bac_DESeqLRT_Phylum, All_Bac_DESeqWald_Phylum, All_Bac_zinbLRT_Phylum, All_Bac_zinbWald_Phylum, All_Bac_ancomWZ_Phylum, All_Bac_ancomNoZ_Phylum)
+# names(input) <- c("Std_DESeq_LRT",
+#                  "Std_DESeq_Wald", # adds names to the list of tests
+#                  "zinb_DESeq_LRT",
+#                  "zinb_DESeq_Wald",
+#                  "ancomWZ",
+#                  "ancomNoZ")
+# 
+# All_Bac_upset_5DAtests <- upset(fromList(input), order.by = "freq", nsets = 12, nintersects = 100) # text.scale = 3, set_size.angles = 0, set_size.show = FALSE, set_size.numbers_size = NULL
+# All_Bac_upset_5DAtests
+```
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+
+# 5.5 Upsetplot comparing ASVs by Accessions at ASV level
+## 5.5.1 Total DA ASVs
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_NoDup_DA_ASV.RData")
+
+upset(fromList(Acc_Bac_NoDup_DA_ASV), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+#upset(fromList(Acc_Bac_NoDup_DA_ASV), order.by = "freq", nsets = 20, nintersects = 100, text.scale = 1.5)
+```
+
+## 5.5.2 ASVs detected by two tests
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+upset(fromList(Acc_Bac_TwoTimes_DA_ASV), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+
+## 5.5.3 ASVs detected by three tests
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_ThreeTimes_DA_ASV.RData")
+
+upset(fromList(Acc_Bac_ThreeTimes_DA_ASV), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+
+## 5.5.4 ASVs detected by four tests
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_FourTimes_DA_ASV.RData")
+
+upset(fromList(Acc_Bac_FourTimes_DA_ASV), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
+## 5.5.5 ASVs detected by five tests
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_FiveTimes_DA_ASV.RData")
+
+upset(fromList(Acc_Bac_FiveTimes_DA_ASV), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+
+## 5.5.6 ASVs detected by six tests
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_SixTimes_DA_ASV.RData")
+
+upset(fromList(Acc_Bac_SixTimes_DA_ASV), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+
+# 5.6 Upsetplot comparing Classes by Accessions at Class level
+## 5.6.1 Total DA Classes
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ClassLevel/Acc_NoDup_Merged_DA_Class.RData")
+
+Acc_NoDup_Merged_DA_Class <- lapply(Acc_NoDup_Merged_DA_Class, function(x) {
+  x <- x$Class
+})
+
+upset(fromList(Acc_NoDup_Merged_DA_Class), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+#upset(fromList(Acc_Bac_NoDup_DA_Class), order.by = "freq", nsets = 20, nintersects = 100, text.scale = 1.5)
+```
+
+## 5.6.2 Classes detected by two tests
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ClassLevel/Acc_TwoTimes_Merged_DA_Class.RData")
+
+Acc_TwoTimes_Merged_DA_Class <- lapply(Acc_TwoTimes_Merged_DA_Class, function(x) {
+  x <- x$Class
+})
+
+upset(fromList(Acc_TwoTimes_Merged_DA_Class), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+
+# 5.7 Upsetplot comparing Phyla by Accessions at Phylum level
+## 5.7.1 Total DA Phyla
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_PhylumLevel/Acc_NoDup_Merged_DA_Phylum.RData")
+
+upset(fromList(Acc_NoDup_Merged_DA_Phylum), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+
+``` r
+#upset(fromList(Acc_Bac_NoDup_DA_Phylum), order.by = "freq", nsets = 20, nintersects = 100, text.scale = 1.5)
+```
+
+## 5.7.2 Phyla detected by two tests
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_PhylumLevel/Acc_TwoTimes_Merged_DA_Phylum.RData")
+
+upset(fromList(Acc_TwoTimes_Merged_DA_Phylum), order.by = "freq", nsets = 20, nintersects = 100)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-28-1.png)<!-- -->
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+# 5.8 Upset plot all ASVs that may be responsible for resistance
+### Load data
+
+``` r
+# Acc ASVs detected by at least two tests
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+# All data ASVs detected by at least two tests
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_TwoTimes_DA_ASV.RData")
+
+# VL and HM with high log2fold change
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/HM_lfc_2.5_ancomWZ_DA_ASV.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/HM_lfc_3_ancomWZ_DA_ASV.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/VL_lfc_2.5_ancomWZ_DA_ASV.RData")
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/VL_lfc_3_ancomWZ_DA_ASV.RData")
+```
+
+### Making list of DA ASVs
+
+``` r
+# List with all selected DA ASVs
+Selction_DA_ASVs <- list(All_twoDAtests = All_Bac_TwoTimes_DA_ASV,
+                         HM_twoDAtests = Acc_Bac_TwoTimes_DA_ASV$HM,
+                         VL_twoDAtests = Acc_Bac_TwoTimes_DA_ASV$VL,
+                         HM_lfc_2.5 = HM_lfc_2.5_ancomWZ_DA_ASV,
+                         HM_lfc_3 = HM_lfc_3_ancomWZ_DA_ASV,
+                         VL_lfc_2.5 = VL_lfc_2.5_ancomWZ_DA_ASV,
+                         VL_lfc_3 = VL_lfc_3_ancomWZ_DA_ASV)
+
+# Save list with selected ASVs
+save(Selction_DA_ASVs, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Selction_DA_ASVs.RData")
+
+# List subsets
+Comb_DA_ASVs_HM_VL <- list(HM_twoDAtests = Acc_Bac_TwoTimes_DA_ASV$HM,
+                           VL_twoDAtests = Acc_Bac_TwoTimes_DA_ASV$VL,
+                           HM_lfc_2.5 = HM_lfc_2.5_ancomWZ_DA_ASV,
+                           HM_lfc_3 = HM_lfc_3_ancomWZ_DA_ASV,
+                           VL_lfc_2.5 = VL_lfc_2.5_ancomWZ_DA_ASV,
+                           VL_lfc_3 = VL_lfc_3_ancomWZ_DA_ASV)
+Comb_DA_ASVs_lfc <- list(HM_lfc_2.5 = HM_lfc_2.5_ancomWZ_DA_ASV,
+                         HM_lfc_3 = HM_lfc_3_ancomWZ_DA_ASV,
+                         VL_lfc_2.5 = VL_lfc_2.5_ancomWZ_DA_ASV,
+                         VL_lfc_3 = VL_lfc_3_ancomWZ_DA_ASV)
+DA_ASVs_HM_VL_All <- list(HM_twoDAtests = Acc_Bac_TwoTimes_DA_ASV$HM,
+                          VL_twoDAtests = Acc_Bac_TwoTimes_DA_ASV$VL,
+                          All_twoDAtests = All_Bac_TwoTimes_DA_ASV)
+```
+
+### Upset plot
+
+``` r
+upset(fromList(Comb_DA_ASVs_HM_VL), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-32-1.png)<!-- -->
+
+``` r
+upset(fromList(Comb_DA_ASVs_lfc), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-32-2.png)<!-- -->
+
+``` r
+upset(fromList(DA_ASVs_HM_VL_All), order.by = "freq", nsets = 20, nintersects = 100, set_size.show = TRUE)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-32-3.png)<!-- -->
+
+
+# 5.9 Venn diagram DA
+### Accession
+
+``` r
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DifferentialAbundance/SummaryFiles/Acc_Bac_conca_NoAn_nodup.RData")
+
+simple_Venn <- ggVennDiagram(Acc_Bac_conca_NoAn_nodup)
+print(simple_Venn)
+```
+
+![](FP_05_DA_Summary_UpsetPlots_files/figure-html/unnamed-chunk-33-1.png)<!-- -->
+
+``` r
+# ASVs in both VL adn HM
+ASV_VL_HM <- unlist(Acc_Bac_conca_NoAn_nodup[c("HM", "VL")])
+Duplicates_DA_VL_HM <- ASV_VL_HM[duplicated(ASV_VL_HM)]
+print(Duplicates_DA_VL_HM)
+```
+
+```
+##         VL1         VL3         VL4         VL6        VL10        VL21 
+##    "bASV_7"  "bASV_126"  "bASV_178"  "bASV_385" "bASV_1153"  "bASV_183"
+```
+
+``` r
+save(Duplicates_DA_VL_HM, file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DifferentialAbundance/SummaryFiles/Duplicates_DA_VL_HM.RData")
+```
+
+

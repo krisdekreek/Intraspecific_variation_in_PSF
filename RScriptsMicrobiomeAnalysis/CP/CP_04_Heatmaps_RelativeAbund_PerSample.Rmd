@@ -1,0 +1,535 @@
+---
+title: "CP_04_ Relative abundance per sample - Heatmaps"
+author: "Kris de Kreek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+This script is adapted from a script form Melissa Uribe Acosta. Extra input comes from a script of Pedro Beschore da Costa.   
+   
+   
+Tutorials   
+- [Heatmap for final plot](http://rstudio-pubs-static.s3.amazonaws.com/288398_185f2889a5f641c6b9aa7b14fa15b634.html)
+- [Excamples of pheatmap package](https://davetang.github.io/muse/pheatmap.html)   
+   
+   
+# 4.0 Preperation
+### Load libraries
+```{r, warning = FALSE, message=FALSE}
+R.version$version.string # prints R version
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(DESeq2)
+packageVersion("DESeq2")
+library(pheatmap)
+packageVersion("pheatmap")
+library(tidyr)
+packageVersion("tidyr")
+library(gridExtra)
+packageVersion("gridExtra")
+library(grid)
+packageVersion("grid")
+
+# library(metamisc) #for phyloseq_sep_variable (and more?)
+# packageVersion("metamisc")
+# library(zinbwave)
+# packageVersion("zinbwave")
+# library(UpSetR)
+# packageVersion("UpSetR")
+# library(tuple)
+# packageVersion("tuple")
+# library(ggpubr)
+# packageVersion("ggpubr")
+# library(stringr)
+# packageVersion("stringr")
+# library(ggVennDiagram)
+# packageVersion("ggVennDiagram")
+```
+
+
+# 4.10 Heatmap relative abundance per sample
+## 4.10.1 Accessions seperate
+### Heatmap At ASV level DA ASVs occuring twice
+#### Load data
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_unnormalized_bac_ps_ForDA.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+```
+
+#### Prepare data
+```{r}
+# Put all unique DA ASVs in one vector
+Acc_Bac_TwoTimes_DA_ASV_comb <- unique(unlist(Acc_Bac_TwoTimes_DA_ASV, use.names = FALSE))
+
+# Calculate relative abundance
+CP_ps <- transform_sample_counts(CP_unnormalized_bac_ps_ForDA, function(x) x / sum(x))
+
+# Only keep DA in ps object
+CP_ps <- prune_taxa(Acc_Bac_TwoTimes_DA_ASV_comb, CP_ps)
+
+# Phyloseq object to data frame with relative abundance, meta data and taxonomy. Each row is a ASV-sample combination
+df <- psmelt(CP_ps)
+head(df[, c(1:8)], 12)
+
+# unique accessions
+Acc <- names(Acc_Bac_TwoTimes_DA_ASV)
+```
+
+#### Matrix per accession
+```{r}
+# Subset data per accession and DA ASVs
+Rel_Ab_l <- list()
+for (i in seq_along(Acc)) {
+  Acc_sub <- Acc[i]
+  sub_df <- df[df$Accession == Acc_sub & df$OTU %in% Acc_Bac_TwoTimes_DA_ASV[[Acc_sub]], c(1:3, 8)]
+  sub_df <- sub_df[order(sub_df$Cat_treatment, sub_df$Sample), ]
+  sub_df$Sample <- paste(sub_df$Sample, sub_df$Cat_treatment, sep = "_")
+    #colnames(sub_df)[3] <- Acc_sub 
+  Rel_Ab_l[[i]] <- sub_df
+}
+
+names(Rel_Ab_l) <- Acc
+
+# Number of Co Samples
+Numb_Co <- lapply(Rel_Ab_l, function(x) length(x[x$Cat_treatment == "Co", "Cat_treatment"])/length(unique(x$OTU)))
+
+# Put each sample in separate column
+Rel_Ab_l_wide <- lapply(Rel_Ab_l, function(df) {
+  df$Cat_treatment <- NULL
+  pivot_wider(df, names_from  = Sample, values_from = Abundance, values_fill = 0)
+})
+
+# Make ASVs rownames
+Rel_Ab_l_wide <- lapply(Rel_Ab_l_wide, function(df) {
+  df <- as.data.frame(df)
+  rownames(df) <- df$OTU
+  colnames(df)[1] <- "ASV"
+  return(df)
+})
+
+
+
+tax <- lapply(Acc_Bac_TwoTimes_DA_ASV, function(x) {
+  sub <- df[df$OTU %in% x, c("OTU", "Genus", "Family", "Order", "Class", "Phylum")]
+  sub <- sub[!duplicated(sub$OTU), ]
+  rownames(sub) <- sub$OTU
+  colnames(sub)[1] <- "ASV"
+  return(sub)
+})
+
+# Add genus to matrix
+AllAcc_lfc2 <- Map(function(x, y) {
+  merge(x, y, by = "ASV", all.y = TRUE)
+}, tax, Rel_Ab_l_wide)
+
+Rel_Ab_l_wide_df <- lapply(AllAcc_lfc2, function(x) {
+  taxon <- x$Genus
+  taxon[is.na(taxon)] <- x$Genus[is.na(taxon)]
+  
+  taxon[taxon == "g__Incertae_Sedis"] <- x$Family[taxon == "g__Incertae_Sedis"]
+  taxon[taxon == "f__Incertae_Sedis"] <- x$Order[taxon == "f__Incertae_Sedis"]
+  taxon[taxon == "o__Incertae_Sedis"] <- x$Class[taxon == "o__Incertae_Sedis"]
+  taxon[taxon == "c__Incertae_Sedis"] <- x$Phylum[taxon == "c__Incertae_Sedis"]
+  
+  taxon[taxon == "g__Unclassified"] <- x$Family[taxon == "g__Unclassified"]
+  taxon[taxon == "f__Unclassified"] <- x$Order[taxon == "f__Unclassified"]
+  taxon[taxon == "o__Unclassified"] <- x$Class[taxon == "o__Unclassified"]
+  taxon[taxon == "c__Unclassified"] <- x$Phylum[taxon == "c__Unclassified"]
+  
+  rownames(x) <- paste(x$ASV, taxon, sep = "_")
+  return(x)
+})
+
+# Split matrix and taxonomyn and turn into matrix
+tax <- lapply(Rel_Ab_l_wide_df, function(x) {
+  x[1:6]
+})
+
+Rel_Ab_l_wide_m <- lapply(Rel_Ab_l_wide_df, function(x) {
+  x <- x[7:ncol(x)]
+  as.matrix(x)
+})
+
+Rel_Ab_l_wide_m$OH[, 1:6]
+```
+
+#### Headmap 
+```{r, fig.height=4, fig.width=7}
+plot_Rel_Ab <- list()
+for (i in seq_along(Rel_Ab_l_wide_m)) {
+  x <- Rel_Ab_l_wide_m[[i]]
+  
+  # make 0s gray
+  x[x == 0] <- NA
+  
+  # breaks in headmap
+  max_abs <- max(abs(x), na.rm = TRUE)
+  breaks <- unique(c(#seq(0, 0.2*max_abs, length.out = 30), # More breaks in this range for sensitivity
+                     seq(0*max_abs, max_abs, length.out = 60)))
+
+  # Headmap
+  plot_Rel_Ab[[i]] <- pheatmap(x,
+            cluster_rows = FALSE,
+            cluster_cols = FALSE,
+            color = colorRampPalette(c("gold", "orange", "red", "darkred", "black"))(length(breaks) - 1),
+            breaks = breaks,
+            main = names(Rel_Ab_l_wide_m[i]),
+            fontsize_row = 10,
+            fontsize_col = 14,
+            gaps_col = c(Numb_Co[[i]]),
+            na_col = "grey90",
+            angle_col = 90)
+}
+```
+
+#### Print plots
+```{r, fig.height=1.55, fig.width=7}
+#1
+plot_Rel_Ab[c(2)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(3)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(10)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(12)]
+```
+```{r, fig.height=1.8, fig.width=7}
+#2
+plot_Rel_Ab[c(7)]
+```
+```{r, fig.height=1.8, fig.width=7}
+plot_Rel_Ab[c(9)]
+```
+```{r, fig.height=2, fig.width=7}
+#3
+plot_Rel_Ab[c(6)]
+```
+```{r, fig.height=2, fig.width=7}
+plot_Rel_Ab[c(11)]
+```
+```{r, fig.height=2.5, fig.width=7}
+#5
+plot_Rel_Ab[4]
+```
+```{r, fig.height=3.1, fig.width=7}
+#8
+plot_Rel_Ab[c(5)]
+```
+```{r, fig.height=3.1, fig.width=7}
+plot_Rel_Ab[c(8)]
+```
+```{r, fig.height=3.4, fig.width=7}
+#9
+plot_Rel_Ab[1]
+```
+
+
+
+#### All Plots on same scall
+```{r, fig.height=4, fig.width=7}
+# breaks in head map
+max_abs <- lapply(Rel_Ab_l_wide_m, function(x) max(abs(x), na.rm = TRUE))
+max_abs <- max(unlist(max_abs))
+breaks <- unique(c(seq(0, 0.2*max_abs, length.out = 80),
+                   seq(0.2*max_abs, 0.5*max_abs, length.out = 40), # More breaks in this range for sensitivity
+                   seq(0.5*max_abs, max_abs, length.out = 5)))
+
+plot_Rel_Ab <- list()
+for (i in seq_along(Rel_Ab_l_wide_m)) {
+  x <- Rel_Ab_l_wide_m[[i]]
+  
+  # make 0s gray
+  x[x == 0] <- NA
+  
+  # Head map
+  plot_Rel_Ab[[i]] <- pheatmap(x,
+            cluster_rows = FALSE,
+            cluster_cols = FALSE,
+            color = colorRampPalette(c("gold", "orange", "red", "darkred", "black"))(length(breaks) - 1),
+            breaks = breaks,
+            main = names(Rel_Ab_l_wide_m[i]),
+            fontsize_row = 10,
+            fontsize_col = 14,
+            na_col = "grey90",
+            gaps_col = c(Numb_Co[[i]]),
+            angle_col = 90)
+}
+```
+
+#### Print plots
+```{r, fig.height=1.55, fig.width=7}
+#1
+plot_Rel_Ab[c(2)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(3)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(10)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(12)]
+```
+```{r, fig.height=1.8, fig.width=7}
+#2
+plot_Rel_Ab[c(7)]
+```
+```{r, fig.height=1.8, fig.width=7}
+plot_Rel_Ab[c(9)]
+```
+```{r, fig.height=2, fig.width=7}
+#3
+plot_Rel_Ab[c(6)]
+```
+```{r, fig.height=2, fig.width=7}
+plot_Rel_Ab[c(11)]
+```
+```{r, fig.height=2.5, fig.width=7}
+#5
+plot_Rel_Ab[4]
+```
+```{r, fig.height=3.1, fig.width=7}
+#8
+plot_Rel_Ab[c(5)]
+```
+```{r, fig.height=3.1, fig.width=7}
+plot_Rel_Ab[c(8)]
+```
+```{r, fig.height=3.4, fig.width=7}
+#9
+plot_Rel_Ab[1]
+```
+
+#### All Plots on same scall without legend
+```{r, fig.height=4, fig.width=7}
+max_abs <- lapply(Rel_Ab_l_wide_m, function(x) max(abs(x), na.rm = TRUE))
+max_abs <- max(unlist(max_abs))
+breaks <- unique(c(seq(0, 0.2*max_abs, length.out = 80),
+                   seq(0.2*max_abs, 0.5*max_abs, length.out = 40), # More breaks in this range for sensitivity
+                   seq(0.5*max_abs, max_abs, length.out = 5)))
+
+plot_Rel_Ab <- list()
+for (i in seq_along(Rel_Ab_l_wide_m)) {
+  x <- Rel_Ab_l_wide_m[[i]]
+  
+  # make 0s gray
+  x[x == 0] <- NA
+  
+  # Head map
+  plot_Rel_Ab[[i]] <- pheatmap(x,
+            cluster_rows = FALSE,
+            cluster_cols = FALSE,
+            color = colorRampPalette(c("gold", "orange", "red", "darkred", "black"))(length(breaks) - 1),
+            breaks = breaks,
+            main = names(Rel_Ab_l_wide_m[i]),
+            fontsize_row = 10,
+            fontsize_col = 14,
+            na_col = "grey90",
+            angle_col = 90,
+            gaps_col = c(Numb_Co[[i]]),
+            legend = FALSE)
+}
+```
+
+#### Print plots
+```{r, fig.height=1.55, fig.width=7}
+#1
+plot_Rel_Ab[c(2)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(3)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(10)]
+```
+```{r, fig.height=1.55, fig.width=7}
+plot_Rel_Ab[c(12)]
+```
+```{r, fig.height=1.8, fig.width=7}
+#2
+plot_Rel_Ab[c(7)]
+```
+```{r, fig.height=1.8, fig.width=7}
+plot_Rel_Ab[c(9)]
+```
+```{r, fig.height=2, fig.width=7}
+#3
+plot_Rel_Ab[c(6)]
+```
+```{r, fig.height=2, fig.width=7}
+plot_Rel_Ab[c(11)]
+```
+```{r, fig.height=2.5, fig.width=7}
+#5
+plot_Rel_Ab[4]
+```
+```{r, fig.height=3.1, fig.width=7}
+#8
+plot_Rel_Ab[c(5)]
+```
+```{r, fig.height=3.1, fig.width=7}
+plot_Rel_Ab[c(8)]
+```
+```{r, fig.height=3.4, fig.width=7}
+#9
+plot_Rel_Ab[1]
+```
+
+#### All Plots on same scall without legend and x labels
+```{r, fig.height=5, fig.width=10}
+max_abs <- lapply(Rel_Ab_l_wide_m, function(x) max(abs(x), na.rm = TRUE))
+max_abs <- max(unlist(max_abs))
+breaks <- unique(c(seq(0, 0.2*max_abs, length.out = 80),
+                   seq(0.2*max_abs, 0.5*max_abs, length.out = 40), # More breaks in this range for sensitivity
+                   seq(0.5*max_abs, max_abs, length.out = 5)))
+
+plot_Rel_Ab <- list()
+for (i in seq_along(Rel_Ab_l_wide_m)) {
+  x <- Rel_Ab_l_wide_m[[i]]
+  
+  # make 0s gray
+  x[x == 0] <- NA
+
+  # Head map
+  plot_Rel_Ab[[i]] <- pheatmap(x,
+            cluster_rows = FALSE,
+            cluster_cols = FALSE,
+            color = colorRampPalette(c("gold", "orange", "red", "darkred", "black"))(length(breaks) - 1),
+            breaks = breaks,
+            #main = names(Rel_Ab_l_wide_m[i]),
+            show_colnames = FALSE,
+            show_rownames = TRUE,
+            fontsize_row = 14,
+            fontsize_col = 14,
+            na_col = "grey90",
+            angle_col = 90,
+            gaps_col = c(Numb_Co[[i]]),
+            cellwidth = 20,
+            cellheight = 20,
+            legend = FALSE)
+}
+```
+```{r}
+# Create a single legend
+legend <- pheatmap(Rel_Ab_l_wide_m[[1]],
+                   cluster_rows = FALSE,
+                   cluster_cols = FALSE,
+                   color = colorRampPalette(c("gold", "orange", "red", "darkred", "black"))(length(breaks) - 1),
+                   breaks = breaks,
+                   legend = TRUE,
+                   show_rownames = FALSE,
+                   show_colnames = FALSE)$gtable
+
+# The legend is usually in the last grob of the gtable
+legend_grob <- legend$grobs[[2]]
+```
+
+
+#### Print plots
+```{r, fig.height=0.3, fig.width=7.5}
+#1
+plot_Rel_Ab[c(2)]
+```
+```{r, fig.height=0.3, fig.width=7.5}
+plot_Rel_Ab[c(3)]
+```
+```{r, fig.height=0.3, fig.width=7.5}
+plot_Rel_Ab[c(10)]
+```
+```{r, fig.height=0.3, fig.width=7.5}
+plot_Rel_Ab[c(12)]
+```
+```{r, fig.height=0.6, fig.width=7.5}
+#2
+plot_Rel_Ab[c(7)]
+```
+```{r, fig.height=0.6, fig.width=7.5}
+plot_Rel_Ab[c(9)]
+```
+```{r, fig.height=0.9, fig.width=7.5}
+#3
+plot_Rel_Ab[c(6)]
+```
+```{r, fig.height=0.9, fig.width=7.5}
+plot_Rel_Ab[c(11)]
+```
+```{r, fig.height=1.5, fig.width=7.5}
+#5
+plot_Rel_Ab[4]
+```
+```{r, fig.height=2.4, fig.width=7.5}
+#8
+plot_Rel_Ab[c(5)]
+```
+```{r, fig.height=2.4, fig.width=7.5}
+plot_Rel_Ab[c(8)]
+```
+```{r, fig.height=2.7, fig.width=7.5}
+#9
+plot_Rel_Ab[1]
+```
+
+```{r}
+grid.newpage()
+p <- grid.arrange(grobs = lapply(plot_Rel_Ab, function(x) x$gtable), ncol = 2)
+```
+
+#### Save plots
+```{r}
+# save all heatmaps
+files <- c("CP_DAHeatmap_ASV_persample.svg", "CP_DAHeatmap_ASV_persample.png")
+
+mapply(function(x){
+  file_path <- file.path("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs", x)
+
+  if (grepl("svg$", x)) {
+    svg(file_path, width = 54/2.54, height = 40/2.54)
+  } else {
+    png(file_path, width = 54, height = 40, units = "cm", res = 300)
+  }
+  grid::grid.draw(p)
+  dev.off()
+}, files)
+
+# save legend
+files <- c("CP_DAHeatmap_ASV_persample_legend.svg", "CP_DAHeatmap_ASV_persample_legend.png")
+
+mapply(function(x){
+  file_path <- file.path("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs", x)
+
+  if (grepl("svg$", x)) {
+    svg(file_path, width = 2/2.54, height = 5.5/2.54)
+  } else {
+    png(file_path, width = 2, height = 5.5, units = "cm", res = 300)
+  }
+  grid::grid.draw(legend_grob)
+  dev.off()
+}, files)
+```
+
+```{r}
+# library(gridExtra)
+# library(grid)
+# 
+# heatmaps <- lapply(plot_Rel_Ab, function(x) x$gtable)
+# 
+# # Combine heatmaps in a single grid
+# grid.newpage()
+# grid.arrange(
+#   grobs = c(heatmaps, list(legend_grob)),
+#   ncol = 2,
+#   widths = c(6,8)
+# )
+```

@@ -1,0 +1,1229 @@
+---
+title: "CP_FP_05 - Heatmaps of ASVs that are DA in CP and in FP"
+author: "Kris de Kreek"
+date: "2026-03-18"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+   
+Tutorials   
+- [Heatmap for final plot](http://rstudio-pubs-static.s3.amazonaws.com/288398_185f2889a5f641c6b9aa7b14fa15b634.html)
+- [Excamples of pheatmap package](https://davetang.github.io/muse/pheatmap.html)   
+   
+   
+# 5.0 load libraries
+### Load libraries
+
+``` r
+R.version$version.string # prints R version
+```
+
+```
+## [1] "R version 4.5.1 (2025-06-13 ucrt)"
+```
+
+``` r
+library(phyloseq)
+packageVersion("phyloseq")
+```
+
+```
+## [1] '1.52.0'
+```
+
+``` r
+library(pheatmap)
+packageVersion("pheatmap")
+```
+
+```
+## [1] '1.0.13'
+```
+
+
+# 5.1 Heatmap overlapping ASVs Acc
+## 5.1.1 Load data
+
+``` r
+# load phyloseq object CP-FP together
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_together/unnormalized_bac_ps.RData")
+
+# load DA ASVs CP for Acc
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+Acc_Bac_TwoTimes_DA_ASV_CP <- Acc_Bac_TwoTimes_DA_ASV
+rm(Acc_Bac_TwoTimes_DA_ASV)
+
+# load DA ASVs FP for Acc
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+Acc_Bac_TwoTimes_DA_ASV_FP <- Acc_Bac_TwoTimes_DA_ASV
+rm(Acc_Bac_TwoTimes_DA_ASV)
+
+# ASVs overlapping in DA tests CP and FP for Acc
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_OverlapDA/Acc_overlap_DA.RData")
+
+# load logfold change values CP
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_Ancom_ASVLevel/ancomWZ_Bac_Acc.RData")
+ancomWZ_Bac_Acc_CP <- ancomWZ_Bac_Acc
+rm(ancomWZ_Bac_Acc)
+
+# load logfold change values FP
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/ancomWZ_Bac_Acc.RData")
+ancomWZ_Bac_Acc_FP <- ancomWZ_Bac_Acc
+rm(ancomWZ_Bac_Acc)
+```
+
+## 5.1.2 Extract logfold change
+### CP
+
+``` r
+# Filter logfold change for DA ASVs per accession
+lfc_DA_specific_CP <- lapply(names(ancomWZ_Bac_Acc_CP), function(name) {
+  da_asvs <- intersect(Acc_overlap_DA, Acc_Bac_TwoTimes_DA_ASV_CP[[name]]) #Only ASVs that are shared between CP and FP and were DA in CP
+  lfc_table <- ancomWZ_Bac_Acc_CP[[name]]$res$lfc
+  rownames(lfc_table) <- lfc_table$taxon
+  lfc_table <- lfc_table[lfc_table$taxon %in% da_asvs, "Cat_treatmentMb", drop = FALSE]
+  lfc_table$ASV <- rownames(lfc_table)
+  colnames(lfc_table)[1] <- paste0(name) #, "_CP"
+  lfc_table
+})
+
+names(lfc_DA_specific_CP) <- names(lfc_DA_specific_CP)
+
+# merge all accessions together
+AllAcc_lfc_CP <- Reduce(function(x, y) merge(x, y, by = "ASV", all = TRUE), lfc_DA_specific_CP)
+rownames(AllAcc_lfc_CP) <- AllAcc_lfc_CP$ASV
+AllAcc_lfc_CP
+```
+
+```
+##                 ASV        OH DD HE        KI       VL CD RI KT MC HM IT1 GO1
+## bASV_1224 bASV_1224 -1.254837 NA NA        NA       NA NA NA NA NA NA  NA  NA
+## bASV_315   bASV_315        NA NA NA        NA 1.748393 NA NA NA NA NA  NA  NA
+## bASV_656   bASV_656        NA NA NA -1.719751       NA NA NA NA NA NA  NA  NA
+```
+
+### FP
+
+``` r
+# Filter logfold change for DA ASVs per accession
+lfc_DA_specific_FP <- lapply(names(ancomWZ_Bac_Acc_FP), function(name) {
+  da_asvs <- intersect(Acc_overlap_DA, Acc_Bac_TwoTimes_DA_ASV_FP[[name]]) #Only ASVs that are shared between CP and FP and were DA in FP
+  lfc_table <- ancomWZ_Bac_Acc_FP[[name]]$res$lfc
+  rownames(lfc_table) <- lfc_table$taxon
+  lfc_table <- lfc_table[lfc_table$taxon %in% da_asvs, "Soil_conditioningMb", drop = FALSE]
+  lfc_table$ASV <- rownames(lfc_table)
+  colnames(lfc_table)[1] <- paste0(" ", name)
+  lfc_table
+})
+
+names(lfc_DA_specific_FP) <- names(lfc_DA_specific_FP)
+
+# merge all accessions together
+AllAcc_lfc_FP <- Reduce(function(x, y) merge(x, y, by = "ASV", all = TRUE), lfc_DA_specific_FP)
+rownames(AllAcc_lfc_FP) <- AllAcc_lfc_FP$ASV
+
+# Remove RI
+AllAcc_lfc_FP <- AllAcc_lfc_FP[ , -4]
+AllAcc_lfc_FP
+```
+
+```
+##                 ASV         VL  CD  HM  GO1
+## bASV_1224 bASV_1224  1.9549544  NA  NA   NA
+## bASV_315   bASV_315  0.4535477  NA  NA   NA
+## bASV_656   bASV_656 -1.3437874  NA  NA   NA
+```
+
+### Merge CP and FP
+
+``` r
+AllAcc_lfc <- merge(AllAcc_lfc_CP, AllAcc_lfc_FP, by = "ASV")
+rownames(AllAcc_lfc) <- AllAcc_lfc$ASV
+```
+
+### Adding taxonomy
+
+``` r
+# Only keep DA in ps object
+ps <- prune_taxa(Acc_overlap_DA, unnormalized_bac_ps)
+
+# Phyloseq object to data frame with relative abundance, meta data and taxonomy. Each row is a ASV-sample combination
+df_clean <- psmelt(ps)
+head(df_clean[, c(1:9, 95:101)], 12)
+```
+
+```
+##          OTU Sample Abundance Phase_PSF SampleNr Accession Domestication
+## 782 bASV_315   F538       127        FP      538        RI    Cultivated
+## 780 bASV_315   F479       108        FP      479        VL          Wild
+## 777 bASV_315   F478        91        FP      478        VL          Wild
+## 568 bASV_315   F010        90        FP       10        CD    Cultivated
+## 771 bASV_315   F476        90        FP      476        VL          Wild
+## 795 bASV_315   F526        89        FP      526        RI    Cultivated
+## 794 bASV_315   FE98        88        FP      E98        RI    Cultivated
+## 586 bASV_315   F020        87        FP       20        CD    Cultivated
+## 769 bASV_315   F394        83        FP      394        RI    Cultivated
+## 779 bASV_315   F536        81        FP      536        RI    Cultivated
+## 796 bASV_315   F457        77        FP      457        VL          Wild
+## 775 bASV_315   F396        76        FP      396        RI    Cultivated
+##     Cat_treatment Soil_conditioning is.neg     Kingdom            Phylum
+## 782            Co                Co  FALSE k__Bacteria p__Pseudomonadota
+## 780            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 777            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 568            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 771            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 795            Co                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 794            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 586            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 769            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 779            Co                Co  FALSE k__Bacteria p__Pseudomonadota
+## 796            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 775            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+##                      Class              Order            Family          Genus
+## 782 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 780 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 777 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 568 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 771 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 795 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 794 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 586 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 769 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 779 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 796 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 775 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+```
+
+``` r
+# Extract unique ASV–Class-Phylum mapping
+tax <- df_clean[!duplicated(df_clean$OTU), c("OTU", "Genus", "Family", "Order", "Class", "Phylum")]
+
+# Row names must match heat map rows
+rownames(tax) <- tax$OTU
+tax$OTU <- NULL
+head(tax)
+```
+
+```
+##                       Genus            Family              Order
+## bASV_315     g__Ramlibacter f__Comamonadaceae o__Burkholderiales
+## bASV_656  g__Incertae_Sedis f__Incertae_Sedis      o__Gaiellales
+## bASV_1224 g__Incertae_Sedis f__Incertae_Sedis      o__Gaiellales
+##                            Class            Phylum
+## bASV_315  c__Gammaproteobacteria p__Pseudomonadota
+## bASV_656      c__Thermoleophilia p__Actinomycetota
+## bASV_1224     c__Thermoleophilia p__Actinomycetota
+```
+
+``` r
+# Add genus to matrix
+AllAcc_lfc2 <- AllAcc_lfc
+tax$ASV <- rownames(tax)
+AllAcc_lfc2 <- merge(tax, AllAcc_lfc2, ID = "ASV")
+
+# Add higher taxonomic level if genus is NA or Incertae Sedis
+taxon <- AllAcc_lfc2$Genus
+taxon[is.na(taxon)] <- AllAcc_lfc2$Family[is.na(taxon)]
+taxon[is.na(taxon)] <- AllAcc_lfc2$Order[is.na(taxon)]
+
+taxon[taxon == "g__Incertae_Sedis"] <- AllAcc_lfc2$Family[taxon == "g__Incertae_Sedis"]
+taxon[taxon == "f__Incertae_Sedis"] <- AllAcc_lfc2$Order[taxon == "f__Incertae_Sedis"]
+rownames(AllAcc_lfc2) <- paste(AllAcc_lfc2$ASV, taxon, sep = "_")
+
+AllAcc_lfc2$Phylum <- sub("p__", "", AllAcc_lfc2$Phylum)
+AllAcc_lfc2$Class <- sub("c__", "", AllAcc_lfc2$Class)
+
+# Subset data columns
+tax <- AllAcc_lfc2[1:6]
+AllAcc_lfc2 <- AllAcc_lfc2[7:22]
+head(AllAcc_lfc2)
+```
+
+```
+##                                OH DD HE        KI       VL CD RI KT MC HM IT1
+## bASV_1224_o__Gaiellales -1.254837 NA NA        NA       NA NA NA NA NA NA  NA
+## bASV_315_g__Ramlibacter        NA NA NA        NA 1.748393 NA NA NA NA NA  NA
+## bASV_656_o__Gaiellales         NA NA NA -1.719751       NA NA NA NA NA NA  NA
+##                         GO1         VL  CD  HM  GO1
+## bASV_1224_o__Gaiellales  NA  1.9549544  NA  NA   NA
+## bASV_315_g__Ramlibacter  NA  0.4535477  NA  NA   NA
+## bASV_656_o__Gaiellales   NA -1.3437874  NA  NA   NA
+```
+
+``` r
+# Make color pallet for class
+colors15 <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
+              "#882255", "#44AA99", "#117733", "#332288", "#AA4499", "#DDCC77") # "#000000", "#999999", 
+
+# Define colors
+classes2 <- unique(tax$Class)
+class_colors2 <- setNames(colors15[1:length(classes2)], classes2)
+class_colors2 <- list(Class = class_colors2)
+
+phylums2 <- unique(tax$Phylum)
+phylums_colors2 <- setNames(colors15[1:length(phylums2)], phylums2)
+phylums_colors2 <- list(Phylum = phylums_colors2)
+
+colors <- c(phylums_colors2, class_colors2)
+
+# Turn data frame into a matrix
+AllAcc_lfc$ASV <- NULL
+AllAcc_lfc <- as.matrix(AllAcc_lfc)
+AllAcc_lfc2 <- as.matrix(AllAcc_lfc2)
+
+# replace NAs by 0s
+AllAcc_lfc_clu <- AllAcc_lfc
+AllAcc_lfc2_clu <- AllAcc_lfc2
+AllAcc_lfc_clu[is.na(AllAcc_lfc_clu)] <- 0
+AllAcc_lfc2_clu[is.na(AllAcc_lfc2_clu)] <- 0
+```
+
+### Heatmap
+
+``` r
+max_abs <- max(abs(AllAcc_lfc2), na.rm = TRUE)
+pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+         #cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("blue", "white", "red"))(50),
+          breaks = seq(-max_abs, max_abs, length.out = 51),
+          gaps_col = c(12),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax["Phylum"],
+          annotation_colors = colors)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
+
+``` r
+max_abs <- max(abs(AllAcc_lfc2), na.rm = TRUE)
+p <- pheatmap(AllAcc_lfc2,
+          #clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+          cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("blue", "white", "red"))(50),
+          breaks = seq(-max_abs, max_abs, length.out = 51),
+          gaps_col = c(12),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax["Class"],
+          annotation_colors = colors)
+print(p)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+
+``` r
+files <- c("CP_FP_DAHeatmap_Overlap_ASV.svg", "CP_FP_DAHeatmap_Overlap_ASV.png")
+
+mapply(function(x){
+  file_path <- file.path("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs", x)
+
+  if (grepl("svg$", x)) {
+    svg(file_path, width = 24/2.54, height = 3.2/2.54)
+  } else {
+    png(file_path, width = 24, height = 3.2, units = "cm", res = 300)
+  }
+  grid::grid.draw(p$gtable)
+  dev.off()
+}, files)
+```
+
+```
+## CP_FP_DAHeatmap_Overlap_ASV.svg.png CP_FP_DAHeatmap_Overlap_ASV.png.png 
+##                                   2                                   2
+```
+
+``` r
+pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+         #cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("blue", "white", "red"))(50),
+          breaks = seq(-max_abs, max_abs, length.out = 51),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[5:6],
+          annotation_colors = colors)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+
+``` r
+pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          #clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+         cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("blue", "white", "red"))(50),
+          breaks = seq(-max_abs, max_abs, length.out = 51),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[5:6],
+          annotation_colors = colors)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+         #cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("blue", "white", "red"))(50),
+          breaks = seq(-max_abs, max_abs, length.out = 51),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[3:6],
+          annotation_colors = colors)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          #clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+          cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("blue", "white", "red"))(50),
+          breaks = seq(-max_abs, max_abs, length.out = 51),
+          gaps_col = c(12),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[5:6],
+          annotation_colors = colors)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          #clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+          cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("blue", "white", "red"))(50),
+          breaks = seq(-max_abs, max_abs, length.out = 51),
+          gaps_col = c(12),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[3:6],
+          annotation_colors = colors)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+# Clean environment
+rm(list = ls())
+```
+
+
+# 5.2 Heatmap overlapping ASVs All
+ASVs overlapping in DA tests CP and FP for Acc, Dom and All data
+
+## 5.2.1 Load data
+
+``` r
+# load phyloseq object CP-FP together
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_together/unnormalized_bac_ps.RData")
+
+# load DA ASVs CP for Acc
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+Acc_Bac_TwoTimes_DA_ASV_CP <- Acc_Bac_TwoTimes_DA_ASV
+rm(Acc_Bac_TwoTimes_DA_ASV)
+
+# load DA ASVs FP for Acc
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+Acc_Bac_TwoTimes_DA_ASV_FP <- Acc_Bac_TwoTimes_DA_ASV
+rm(Acc_Bac_TwoTimes_DA_ASV)
+
+# load DA ASVs CP for Dom
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/Dom_Bac_TwoTimes_DA_ASV.RData")
+Dom_Bac_TwoTimes_DA_ASV_CP <- Dom_Bac_TwoTimes_DA_ASV
+rm(Dom_Bac_TwoTimes_DA_ASV)
+
+# load DA ASVs CP for All
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_TwoTimes_DA_ASV.RData")
+All_Bac_TwoTimes_DA_ASV_CP <- All_Bac_TwoTimes_DA_ASV
+rm(All_Bac_TwoTimes_DA_ASV)
+
+# load DA ASVs FP for All
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_SummaryFiles/SummaryFiles_ASVLevel/All_Bac_TwoTimes_DA_ASV.RData")
+All_Bac_TwoTimes_DA_ASV_FP <- All_Bac_TwoTimes_DA_ASV
+rm(All_Bac_TwoTimes_DA_ASV)
+
+# ASVs overlapping in DA tests CP and FP for Acc, Dom and All data
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_OverlapDA/Tot_overlap_DA.RData")
+
+# load logfold change values Acc CP
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_Ancom_ASVLevel/ancomWZ_Bac_Acc.RData")
+ancomWZ_Bac_Acc_CP <- ancomWZ_Bac_Acc
+rm(ancomWZ_Bac_Acc)
+
+# load logfold change values Acc FP
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/ancomWZ_Bac_Acc.RData")
+ancomWZ_Bac_Acc_FP <- ancomWZ_Bac_Acc
+rm(ancomWZ_Bac_Acc)
+
+# load logfold change values Dom CP
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_Ancom_ASVLevel/ancomWZ_Bac_Dom.RData")
+ancomWZ_Bac_Dom_CP <- ancomWZ_Bac_Dom
+rm(ancomWZ_Bac_Dom)
+
+# load logfold change values All CP
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_DA_Ancom_ASVLevel/ancomWZ_Bac_All.RData")
+ancomWZ_Bac_All_CP <- ancomWZ_Bac_All
+rm(ancomWZ_Bac_All)
+
+# load logfold change values All FP
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_DA_Ancom_ASVLevel/ancomWZ_Bac_All.RData")
+ancomWZ_Bac_All_FP <- ancomWZ_Bac_All
+rm(ancomWZ_Bac_All)
+```
+
+## 5.2.2 Extract logfold change
+### CP Acc
+
+``` r
+# Filter logfold change for DA ASVs per accession
+lfc_DA_specific_CP_Acc <- lapply(names(ancomWZ_Bac_Acc_CP), function(name) {
+  da_asvs <- intersect(Tot_overlap_DA, Acc_Bac_TwoTimes_DA_ASV_CP[[name]]) #Only ASVs that are shared between CP and FP and were DA in CP
+  lfc_table <- ancomWZ_Bac_Acc_CP[[name]]$res$lfc
+  rownames(lfc_table) <- lfc_table$taxon
+  lfc_table <- lfc_table[lfc_table$taxon %in% da_asvs, "Cat_treatmentMb", drop = FALSE]
+  lfc_table$ASV <- rownames(lfc_table)
+  colnames(lfc_table)[1] <- paste0(name, "_CP")
+  lfc_table
+})
+
+names(lfc_DA_specific_CP_Acc) <- names(ancomWZ_Bac_Acc_CP)
+
+# merge all accessions together
+AllAcc_lfc_CP <- Reduce(function(x, y) merge(x, y, by = "ASV", all = TRUE), lfc_DA_specific_CP_Acc)
+rownames(AllAcc_lfc_CP) <- AllAcc_lfc_CP$ASV
+AllAcc_lfc_CP
+```
+
+```
+##                 ASV     OH_CP DD_CP HE_CP     KI_CP    VL_CP CD_CP RI_CP KT_CP
+## bASV_1224 bASV_1224 -1.254837    NA    NA        NA       NA    NA    NA    NA
+## bASV_315   bASV_315        NA    NA    NA        NA 1.748393    NA    NA    NA
+## bASV_656   bASV_656        NA    NA    NA -1.719751       NA    NA    NA    NA
+##           MC_CP HM_CP IT1_CP GO1_CP
+## bASV_1224    NA    NA     NA     NA
+## bASV_315     NA    NA     NA     NA
+## bASV_656     NA    NA     NA     NA
+```
+
+### FP Acc
+
+``` r
+# Filter logfold change for DA ASVs per accession
+lfc_DA_specific_FP_Acc <- lapply(names(ancomWZ_Bac_Acc_FP), function(name) {
+  da_asvs <- intersect(Tot_overlap_DA, Acc_Bac_TwoTimes_DA_ASV_FP[[name]]) #Only ASVs that are shared between CP and FP and were DA in FP
+  lfc_table <- ancomWZ_Bac_Acc_FP[[name]]$res$lfc
+  rownames(lfc_table) <- lfc_table$taxon
+  lfc_table <- lfc_table[lfc_table$taxon %in% da_asvs, "Soil_conditioningMb", drop = FALSE]
+  lfc_table$ASV <- rownames(lfc_table)
+  colnames(lfc_table)[1] <- paste0(name, "_FP")
+  lfc_table
+})
+
+names(lfc_DA_specific_FP_Acc) <- names(ancomWZ_Bac_Acc_FP)
+
+# merge all accessions together
+AllAcc_lfc_FP <- Reduce(function(x, y) merge(x, y, by = "ASV", all = TRUE), lfc_DA_specific_FP_Acc)
+rownames(AllAcc_lfc_FP) <- AllAcc_lfc_FP$ASV
+AllAcc_lfc_FP
+```
+
+```
+##                 ASV      VL_FP      CD_FP RI_FP HM_FP GO1_FP
+## bASV_1025 bASV_1025  1.9372566         NA    NA    NA     NA
+## bASV_1224 bASV_1224  1.9549544         NA    NA    NA     NA
+## bASV_2073 bASV_2073         NA -0.1082883    NA    NA     NA
+## bASV_315   bASV_315  0.4535477         NA    NA    NA     NA
+## bASV_656   bASV_656 -1.3437874         NA    NA    NA     NA
+```
+
+### CP Dom
+
+``` r
+# Filter logfold change for DA ASVs per accession
+lfc_DA_specific_CP_Dom <- lapply(names(ancomWZ_Bac_Dom_CP), function(name) {
+  da_asvs <- intersect(Tot_overlap_DA, Dom_Bac_TwoTimes_DA_ASV_CP[[name]]) #Only ASVs that are shared between CP and FP and were DA in CP
+  lfc_table <- ancomWZ_Bac_Dom_CP[[name]]$res$lfc
+  rownames(lfc_table) <- lfc_table$taxon
+  lfc_table <- lfc_table[lfc_table$taxon %in% da_asvs, "Cat_treatmentMb", drop = FALSE]
+  lfc_table$ASV <- rownames(lfc_table)
+  colnames(lfc_table)[1] <- paste0(name, "_CP")
+  lfc_table
+})
+
+names(lfc_DA_specific_CP_Dom) <- names(ancomWZ_Bac_Dom_CP)
+
+# merge all accessions together
+AllDom_lfc_CP <- Reduce(function(x, y) merge(x, y, by = "ASV", all = TRUE), lfc_DA_specific_CP_Dom)
+rownames(AllDom_lfc_CP) <- AllDom_lfc_CP$ASV
+AllDom_lfc_CP
+```
+
+```
+##                 ASV    Wild_CP Cultivated_CP
+## bASV_1025 bASV_1025 -0.5999217            NA
+## bASV_656   bASV_656 -1.0016802            NA
+```
+
+### CP All
+
+``` r
+# Filter logfold change for DA ASVs per accession
+da_asvs <- intersect(Tot_overlap_DA, All_Bac_TwoTimes_DA_ASV_CP) #Only ASVs that are shared between CP and FP and were DA in CP
+lfc_DA_specific_CP_All <- ancomWZ_Bac_All_CP$res$lfc
+rownames(lfc_DA_specific_CP_All) <- lfc_DA_specific_CP_All$taxon
+lfc_DA_specific_CP_All <- lfc_DA_specific_CP_All[lfc_DA_specific_CP_All$taxon %in% da_asvs, "Cat_treatmentMb", drop = FALSE]
+lfc_DA_specific_CP_All$ASV <- rownames(lfc_DA_specific_CP_All)
+colnames(lfc_DA_specific_CP_All)[1] <- paste0("All_CP")
+lfc_DA_specific_CP_All
+```
+
+```
+##               All_CP       ASV
+## bASV_656  -0.8122225  bASV_656
+## bASV_1025 -0.4177127 bASV_1025
+## bASV_1224 -0.3852439 bASV_1224
+## bASV_2073  0.3533996 bASV_2073
+```
+
+``` r
+rm(da_asvs)
+```
+
+### FP All
+
+``` r
+# Filter logfold change for DA ASVs per accession
+da_asvs <- intersect(Tot_overlap_DA, All_Bac_TwoTimes_DA_ASV_FP) #Only ASVs that are shared between FP and FP and were DA in FP
+lfc_DA_specific_FP_All <- ancomWZ_Bac_All_FP$res$lfc
+rownames(lfc_DA_specific_FP_All) <- lfc_DA_specific_FP_All$taxon
+lfc_DA_specific_FP_All <- lfc_DA_specific_FP_All[lfc_DA_specific_FP_All$taxon %in% da_asvs, "Soil_conditioningMb", drop = FALSE]
+lfc_DA_specific_FP_All$ASV <- rownames(lfc_DA_specific_FP_All)
+colnames(lfc_DA_specific_FP_All)[1] <- paste0("All_FP")
+lfc_DA_specific_FP_All
+```
+
+```
+## [1] All_FP ASV   
+## <0 rows> (or 0-length row.names)
+```
+
+### Merge CP and FP
+
+``` r
+All_lfc_l <- list(AllAcc_lfc_CP, AllAcc_lfc_FP, AllDom_lfc_CP, lfc_DA_specific_CP_All, lfc_DA_specific_FP_All)
+All_lfc_df <- Reduce(function(x, y) merge(x, y, by = "ASV", all = TRUE), All_lfc_l)
+rownames(All_lfc_df) <- All_lfc_df$ASV
+```
+
+### Adding taxonomy
+
+``` r
+# Only keep DA in ps object
+ps <- prune_taxa(Tot_overlap_DA, unnormalized_bac_ps)
+
+# Phyloseq object to data frame with relative abundance, meta data and taxonomy. Each row is a ASV-sample combination
+df_clean <- psmelt(ps)
+head(df_clean[, c(1:9, 95:101)], 12)
+```
+
+```
+##           OTU Sample Abundance Phase_PSF SampleNr Accession Domestication
+## 1581 bASV_315   F538       127        FP      538        RI    Cultivated
+## 1593 bASV_315   F479       108        FP      479        VL          Wild
+## 1601 bASV_315   F478        91        FP      478        VL          Wild
+## 1238 bASV_315   F010        90        FP       10        CD    Cultivated
+## 1603 bASV_315   F476        90        FP      476        VL          Wild
+## 1604 bASV_315   F526        89        FP      526        RI    Cultivated
+## 1588 bASV_315   FE98        88        FP      E98        RI    Cultivated
+## 1268 bASV_315   F020        87        FP       20        CD    Cultivated
+## 1573 bASV_315   F394        83        FP      394        RI    Cultivated
+## 1576 bASV_315   F536        81        FP      536        RI    Cultivated
+## 1592 bASV_315   F457        77        FP      457        VL          Wild
+## 1570 bASV_315   F396        76        FP      396        RI    Cultivated
+##      Cat_treatment Soil_conditioning is.neg     Kingdom            Phylum
+## 1581            Co                Co  FALSE k__Bacteria p__Pseudomonadota
+## 1593            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 1601            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 1238            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 1603            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 1604            Co                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 1588            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 1268            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 1573            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+## 1576            Co                Co  FALSE k__Bacteria p__Pseudomonadota
+## 1592            Mb                Co  FALSE k__Bacteria p__Pseudomonadota
+## 1570            Mb                Mb  FALSE k__Bacteria p__Pseudomonadota
+##                       Class              Order            Family          Genus
+## 1581 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1593 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1601 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1238 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1603 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1604 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1588 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1268 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1573 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1576 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1592 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+## 1570 c__Gammaproteobacteria o__Burkholderiales f__Comamonadaceae g__Ramlibacter
+```
+
+``` r
+# Extract unique ASV–Class-Phylum mapping
+tax <- df_clean[!duplicated(df_clean$OTU), c("OTU", "Genus", "Family", "Order", "Class", "Phylum")]
+
+# Row names must match heat map rows
+rownames(tax) <- tax$OTU
+tax$OTU <- NULL
+head(tax)
+```
+
+```
+##                       Genus               Family               Order
+## bASV_315     g__Ramlibacter    f__Comamonadaceae  o__Burkholderiales
+## bASV_656  g__Incertae_Sedis    f__Incertae_Sedis       o__Gaiellales
+## bASV_2073 g__Rhodomicrobium f__Rhodomicrobiaceae o__Hyphomicrobiales
+## bASV_1025 g__Incertae_Sedis    f__Incertae_Sedis       o__Gaiellales
+## bASV_1224 g__Incertae_Sedis    f__Incertae_Sedis       o__Gaiellales
+##                            Class            Phylum
+## bASV_315  c__Gammaproteobacteria p__Pseudomonadota
+## bASV_656      c__Thermoleophilia p__Actinomycetota
+## bASV_2073 c__Alphaproteobacteria p__Pseudomonadota
+## bASV_1025     c__Thermoleophilia p__Actinomycetota
+## bASV_1224     c__Thermoleophilia p__Actinomycetota
+```
+
+``` r
+# Add genus to matrix
+All_lfc_df2 <- All_lfc_df
+tax$ASV <- rownames(tax)
+All_lfc_df2 <- merge(tax, All_lfc_df2, ID = "ASV")
+
+# Add higher taxonomic level if genus is NA or Incertae Sedis
+taxon <- All_lfc_df2$Genus
+taxon[is.na(taxon)] <- All_lfc_df2$Family[is.na(taxon)]
+taxon[is.na(taxon)] <- All_lfc_df2$Order[is.na(taxon)]
+
+taxon[taxon == "g__Incertae_Sedis"] <- All_lfc_df2$Family[taxon == "g__Incertae_Sedis"]
+taxon[taxon == "f__Incertae_Sedis"] <- All_lfc_df2$Order[taxon == "f__Incertae_Sedis"]
+rownames(All_lfc_df2) <- paste(All_lfc_df2$ASV, taxon, sep = "_")
+
+# Subset data columns
+tax <- All_lfc_df2[1:6]
+All_lfc_df2 <- All_lfc_df2[7:27]
+head(All_lfc_df2)
+```
+
+```
+##                                 OH_CP DD_CP HE_CP     KI_CP    VL_CP CD_CP
+## bASV_1025_o__Gaiellales            NA    NA    NA        NA       NA    NA
+## bASV_1224_o__Gaiellales     -1.254837    NA    NA        NA       NA    NA
+## bASV_2073_g__Rhodomicrobium        NA    NA    NA        NA       NA    NA
+## bASV_315_g__Ramlibacter            NA    NA    NA        NA 1.748393    NA
+## bASV_656_o__Gaiellales             NA    NA    NA -1.719751       NA    NA
+##                             RI_CP KT_CP MC_CP HM_CP IT1_CP GO1_CP      VL_FP
+## bASV_1025_o__Gaiellales        NA    NA    NA    NA     NA     NA  1.9372566
+## bASV_1224_o__Gaiellales        NA    NA    NA    NA     NA     NA  1.9549544
+## bASV_2073_g__Rhodomicrobium    NA    NA    NA    NA     NA     NA         NA
+## bASV_315_g__Ramlibacter        NA    NA    NA    NA     NA     NA  0.4535477
+## bASV_656_o__Gaiellales         NA    NA    NA    NA     NA     NA -1.3437874
+##                                  CD_FP RI_FP HM_FP GO1_FP    Wild_CP
+## bASV_1025_o__Gaiellales             NA    NA    NA     NA -0.5999217
+## bASV_1224_o__Gaiellales             NA    NA    NA     NA         NA
+## bASV_2073_g__Rhodomicrobium -0.1082883    NA    NA     NA         NA
+## bASV_315_g__Ramlibacter             NA    NA    NA     NA         NA
+## bASV_656_o__Gaiellales              NA    NA    NA     NA -1.0016802
+##                             Cultivated_CP     All_CP All_FP
+## bASV_1025_o__Gaiellales                NA -0.4177127     NA
+## bASV_1224_o__Gaiellales                NA -0.3852439     NA
+## bASV_2073_g__Rhodomicrobium            NA  0.3533996     NA
+## bASV_315_g__Ramlibacter                NA         NA     NA
+## bASV_656_o__Gaiellales                 NA -0.8122225     NA
+```
+
+``` r
+# Make color pallet for class
+classes <- unique(tax$Class)
+class_colors <- setNames(rainbow(length(classes)), classes)
+class_colors <- list(Class = class_colors)
+
+# Make color pallet for class
+phylums <- unique(tax$Phylum)
+phylums_colors <- setNames(rainbow(length(phylums)), phylums)
+phylums_colors <- list(Phylum = phylums_colors)
+
+# Make color pallet for Phylum for genus in plot
+tax2 <- tax
+rownames(tax2) <- paste(tax2$ASV, tax2$Genus, sep = "_")
+phylums2 <- unique(tax2$Phylum)
+phylums_colors2 <- setNames(rainbow(length(phylums2)), phylums2)
+phylums_colors2 <- list(Phylum = phylums_colors2)
+
+# Turn data frame into a matrix
+All_lfc_df$ASV <- NULL
+All_lfc_df <- as.matrix(All_lfc_df)
+All_lfc_df2 <- as.matrix(All_lfc_df2)
+
+# replace NAs by 0s
+All_lfc_df_clu <- All_lfc_df
+All_lfc_df2_clu <- All_lfc_df2
+All_lfc_df_clu[is.na(All_lfc_df_clu)] <- 0
+All_lfc_df2_clu[is.na(All_lfc_df2_clu)] <- 0
+
+# breaks in heatmap
+max_abs <- max(abs(All_lfc_df), na.rm = TRUE)
+breaks <- unique(c(seq(-max_abs, -0.5, length.out = 10), 
+                   seq(-0.5, 0.5, length.out = 30), # More breaks in this range for sensitivity
+                   seq(0.5, max_abs, length.out = 10)))
+```
+
+### Heatmap
+
+``` r
+pheatmap(All_lfc_df,
+          clustering_distance_rows = dist(All_lfc_df_clu),
+          clustering_distance_cols = dist(t(All_lfc_df_clu)),
+         #cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax["Phylum"],
+          annotation_colors = phylums_colors)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+
+``` r
+pheatmap(All_lfc_df2,
+          clustering_distance_rows = dist(All_lfc_df2_clu),
+          clustering_distance_cols = dist(t(All_lfc_df2_clu)),
+         #cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[5:6],
+          annotation_colors = phylums_colors2)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+
+``` r
+pheatmap(All_lfc_df2,
+          clustering_distance_rows = dist(All_lfc_df2_clu),
+          #clustering_distance_cols = dist(t(All_lfc_df2_clu)),
+         cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          gaps_col = c(12,17,19,20),
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[5:6],
+          annotation_colors = phylums_colors2)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+
+``` r
+pheatmap(All_lfc_df2,
+          clustering_distance_rows = dist(All_lfc_df2_clu),
+          clustering_distance_cols = dist(t(All_lfc_df2_clu)),
+         #cluster_cols = FALSE, 
+         #cluster_rows = FALSE, 
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          #main = "Differentially abundant taxa (log2FC by Family)",
+          fontsize_row = 10,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax[3:6],
+          annotation_colors = phylums_colors2)
+```
+
+![](CP-FP_05_OverlapDAASVs_Heatmap_files/figure-html/unnamed-chunk-27-1.png)<!-- -->
+
+
+<!-- ### Extract spearman estimates -->
+<!-- ```{r} -->
+<!-- # All unique DA ASVs -->
+<!-- DA_ASVs <- ASVs_Corr_CPandFP$ASV -->
+<!-- length(DA_ASVs) -->
+
+<!-- # Reorganise lists -->
+<!-- Corr_CatPerf <- CorrTestCatPerf_ASVs_Corr_CPandFP -->
+<!-- Corr_GSL <- CorrTestGSLs_ASVs_Corr_CPandFP -->
+
+<!-- # Add ASV as column -->
+<!-- Corr_GSL <- lapply(Corr_GSL, function(x) { -->
+<!--   x$ASV <- rownames(x) -->
+<!--   x -->
+<!-- }) -->
+
+<!-- Corr_CatPerf$ASV <- rownames(Corr_CatPerf) -->
+
+<!-- # Add GSL as column name -->
+<!-- Corr_GSL <- Map(function(df, nm) { -->
+<!--   colnames(df)[4] <- nm -->
+<!--   df -->
+<!-- }, df = Corr_GSL, nm = names(Corr_GSL)) -->
+
+<!-- # Merge all Spearman estimetes per GSL -->
+<!-- Spear_GSL_df <- Reduce(function(x, y) { -->
+<!--   merge(x, y, by = "ASV", all = TRUE) -->
+<!-- }, lapply(Corr_GSL, function(df) df[, c(4, 10)])) -->
+
+<!-- # Add Cat performance -->
+<!-- Sper_df <- merge(Spear_GSL_df, Corr_CatPerf[ , c(4, 10)], by = "ASV") -->
+<!-- colnames(Sper_df)[11] <- "Cat_weight" -->
+<!-- rownames(Sper_df) <- Sper_df$ASV -->
+<!-- Sper_df -->
+<!-- ``` -->
+
+<!-- ### Prepare taxonomy -->
+<!-- ```{r} -->
+<!-- # Add genus to matrix -->
+<!-- Sper_df2 <- merge(ASVs_Corr_CPandFP, Sper_df, by = "ASV") -->
+<!-- rownames(Sper_df2) <- paste(Sper_df2$ASV, Sper_df2$Genus, sep = "_") -->
+<!-- rownames(Sper_df2)[2] <- paste(Sper_df2$ASV[2], Sper_df2$Family[2], sep = "_") -->
+<!-- Sper_df2 <- Sper_df2[6:15] -->
+<!-- head(Sper_df2) -->
+
+<!-- # Turn into a matrix -->
+<!-- Sper_df$ASV <- NULL -->
+<!-- Sper_mat <- as.matrix(Sper_df) -->
+<!-- Sper_mat2 <- as.matrix(Sper_df2) -->
+<!-- ``` -->
+
+<!-- ### Heatmap  -->
+<!-- ```{r, fig.height=4.5, fig.width=7} -->
+<!-- max_abs <- max(abs(Sper_mat), na.rm = TRUE) -->
+
+<!-- pheatmap(Sper_mat, -->
+<!--           #clustering_distance_rows = dist(AllAcc_lfc_clu), -->
+<!--           #clustering_distance_cols = dist(t(AllAcc_lfc_clu)), -->
+<!--           color = colorRampPalette(c("blue", "white", "red"))(50), -->
+<!--           breaks = seq(-max_abs, max_abs, length.out = 51), -->
+<!--           #main = "Differentially abundant taxa (log2FC by Family)", -->
+<!--           fontsize_row = 10, -->
+<!--           fontsize_col = 14, -->
+<!--           na_col = "grey60", -->
+<!--           angle_col = 90,  -->
+<!--           #annotation_row = tax2["Phylum"], -->
+<!--           #annotation_colors = phylums_colors2 -->
+<!--          ) -->
+<!-- ``` -->
+<!-- ```{r, fig.height=4.5, fig.width=8} -->
+<!-- pheatmap(Sper_mat2, -->
+<!--           #clustering_distance_rows = dist(AllAcc_lfc_clu), -->
+<!--           #clustering_distance_cols = dist(t(AllAcc_lfc_clu)), -->
+<!--           color = colorRampPalette(c("blue", "white", "red"))(50), -->
+<!--           breaks = seq(-max_abs, max_abs, length.out = 51), -->
+<!--           #main = "Differentially abundant taxa (log2FC by Family)", -->
+<!--           fontsize_row = 10, -->
+<!--           fontsize_col = 14, -->
+<!--           na_col = "grey60", -->
+<!--           angle_col = 90) -->
+<!-- ``` -->
+
+
+<!-- ## 4.4.2 Heatmap significant GSLs -->
+<!-- ### Subset GSLs -->
+<!-- ```{r} -->
+<!-- Sper_df3 <- Sper_df[ , c("Cat_weight", "R_Neoglucobrassicin", "R_Sinigrin", "R_Gluconapin", "R_Glucoerucin", "R_Glucoraphanin")] -->
+<!-- Sper_df3 -->
+
+<!-- Sper_df4 <- Sper_df2[ , c("Cat_weight", "R_Neoglucobrassicin", "R_Sinigrin", "R_Gluconapin", "R_Glucoerucin", "R_Glucoraphanin")] -->
+<!-- Sper_df4 -->
+
+<!-- Sper_mat3 <- as.matrix(Sper_df3) -->
+<!-- Sper_mat4 <- as.matrix(Sper_df4) -->
+<!-- ``` -->
+
+<!-- ### Heatmap  -->
+<!-- ```{r, fig.height=4, fig.width=5.2} -->
+<!-- max_abs <- max(abs(Sper_mat3), na.rm = TRUE) -->
+
+<!-- pheatmap(Sper_mat3, -->
+<!--           color = colorRampPalette(c("blue", "white", "red"))(50), -->
+<!--           breaks = seq(-max_abs, max_abs, length.out = 51), -->
+<!--           #main = "Differentially abundant taxa (log2FC by Family)", -->
+<!--           fontsize_row = 10, -->
+<!--           fontsize_col = 14, -->
+<!--           na_col = "grey60", -->
+<!--           angle_col = 90) -->
+<!-- ``` -->
+<!-- ```{r, fig.height=4, fig.width=6.2} -->
+<!-- pheatmap(Sper_mat4, -->
+<!--           color = colorRampPalette(c("blue", "white", "red"))(50), -->
+<!--           breaks = seq(-max_abs, max_abs, length.out = 51), -->
+<!--           #main = "Differentially abundant taxa (log2FC by Family)", -->
+<!--           fontsize_row = 10, -->
+<!--           fontsize_col = 14, -->
+<!--           na_col = "grey60", -->
+<!--           angle_col = 90) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- # Clean environment -->
+<!-- rm(list = ls()) -->
+<!-- ``` -->
+
+
+<!-- # 4.5 Heatmap correlating Genuses -->
+<!-- ## 4.5.1 Load data -->
+<!-- ```{r} -->
+<!-- # load phyloseq object -->
+<!-- load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_unnormalized_bac_ps_ForDA.RData") -->
+
+<!-- # Correlation test GSLs CP -->
+<!-- load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_OverlapCorrelations/CorrTestGSLs_Genus_Corr_CPandFP.RData") -->
+
+<!-- # Correlation test Cat performance FP -->
+<!-- load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/CP_FP_OverlapCorrelations/CorrTestCatPerf_Genus_Corr_CPandFP.RData") -->
+<!-- ``` -->
+
+<!-- ## 4.5.3 Heatmap all GSLs -->
+<!-- ### Extract spearman estimates -->
+<!-- ```{r} -->
+<!-- # All unique DA ASVs -->
+<!-- ASVs_l <- lapply(CorrTestCatPerf_Genus_Corr_CPandFP, function(x) x$ASV) -->
+<!-- ASVS <- sort(unique(unlist(ASVs_l))) -->
+<!-- length(ASVS) -->
+
+<!-- # Reorganise lists -->
+<!-- #Corr_CatPerf <- do.call(rbind.data.frame, CorrTestCatPerf_ASVs_Corr_CPandFP) -->
+<!-- #Corr_GSL <- CorrTestGSLs_ASVs_Corr_CPandFP -->
+
+<!-- # Transposes GSL list -->
+<!-- genus_names <- names(CorrTestGSLs_Genus_Corr_CPandFP[[1]]) -->
+<!-- met_names   <- names(CorrTestGSLs_Genus_Corr_CPandFP) -->
+
+<!-- GSL_l_t <- setNames( -->
+<!--   lapply(genus_names, function(gen) { -->
+<!--     setNames( -->
+<!--       lapply(CorrTestGSLs_Genus_Corr_CPandFP, function(met) met[[gen]]), -->
+<!--       met_names -->
+<!--     ) -->
+<!--   }), -->
+<!--   genus_names -->
+<!-- ) -->
+
+
+<!-- # Make a df for heatmap -->
+<!-- merged_genus_df <- lapply(names(GSL_l_t), function(gen) { -->
+
+<!--   ## 1. Merge the 9 metabolite data frames -->
+<!--   met_merged <- Reduce( -->
+<!--     function(x, y) merge(x, y, by = "ASV", all = TRUE), -->
+<!--     lapply(names(GSL_l_t[[gen]]), function(met) { -->
+<!--       df <- GSL_l_t[[gen]][[met]][, c(10, 4)] -->
+<!--       colnames(df) <- c("ASV", met) -->
+<!--       df -->
+<!--     }) -->
+<!--   ) -->
+
+<!--   ## 2. Merge with Caterpillar performance -->
+<!--   gen_df <- CorrTestCatPerf_Genus_Corr_CPandFP[[gen]][, c(10, 4)] -->
+<!--   colnames(gen_df)[colnames(gen_df) != "ASV"] <- "Cat_weight" -->
+
+<!--   ## 3. Final merge -->
+<!--   out <- merge(met_merged, gen_df, by = "ASV", all = TRUE) -->
+
+<!--   ## 4. Add genus column -->
+<!--   out$Genus <- gen -->
+
+<!--   out -->
+<!-- }) -->
+
+<!-- names(merged_genus_df) <- names(GSL_l_t) -->
+
+<!-- # Combine into one df -->
+<!-- merged_df <- do.call(rbind.data.frame, merged_genus_df) -->
+
+<!-- # Add genus to matrix -->
+<!-- rownames(merged_df) <- paste(merged_df$ASV, merged_df$Genus, sep = "_") -->
+<!-- merged_df <- merged_df[2:11] -->
+<!-- head(merged_df) -->
+
+<!-- # Turn into a matrix -->
+<!-- merged_mat <- as.matrix(merged_df) -->
+
+<!-- # remove NAs only for clustering -->
+<!-- merged_mat_clu <- merged_mat -->
+<!-- merged_mat_clu[is.na(merged_mat_clu)] <- 0 -->
+<!-- ``` -->
+
+<!-- ### Statistical info -->
+<!-- ```{r} -->
+<!-- # Make a df for heatmap -->
+<!-- merged_genus_df_stat <- lapply(names(GSL_l_t), function(gen) { -->
+
+<!--   ## 1. Merge the 9 metabolite data frames -->
+<!--   met_merged <- Reduce( -->
+<!--     function(x, y) merge(x, y, by = "ASV", all = TRUE), -->
+<!--     lapply(names(GSL_l_t[[gen]]), function(met) { -->
+<!--       df <- GSL_l_t[[gen]][[met]][, c(10, 6)] -->
+<!--       colnames(df) <- c("ASV", met) -->
+<!--       df -->
+<!--     }) -->
+<!--   ) -->
+
+<!--   ## 2. Merge with Caterpillar performance -->
+<!--   gen_df <- CorrTestCatPerf_Genus_Corr_CPandFP[[gen]][, c(10, 6)] -->
+<!--   colnames(gen_df)[colnames(gen_df) != "ASV"] <- "Cat_weight" -->
+
+<!--   ## 3. Final merge -->
+<!--   out <- merge(met_merged, gen_df, by = "ASV", all = TRUE) -->
+
+<!--   ## 4. Add genus column -->
+<!--   out$Genus <- gen -->
+
+<!--   out -->
+<!-- }) -->
+
+<!-- names(merged_genus_df_stat) <- names(GSL_l_t) -->
+
+<!-- # Combine into one df -->
+<!-- merged_df_stat <- do.call(rbind.data.frame, merged_genus_df_stat) -->
+
+<!-- # Add genus to matrix -->
+<!-- rownames(merged_df_stat) <- paste(merged_df_stat$ASV, merged_df_stat$Genus, sep = "_") -->
+<!-- merged_df_stat <- merged_df_stat[2:11] -->
+<!-- head(merged_df_stat) -->
+
+<!-- # Turn into a matrix -->
+<!-- merged_mat_stat <- as.matrix(merged_df_stat) -->
+<!-- ``` -->
+
+<!-- ### Heatmap  -->
+<!-- ```{r, fig.height=15, fig.width=9} -->
+<!-- max_abs <- max(abs(merged_mat), na.rm = TRUE) -->
+
+<!-- pheatmap(merged_mat, -->
+<!--           #clustering_distance_rows = dist(merged_mat_clu), -->
+<!--          cluster_rows = FALSE,  -->
+<!--          clustering_distance_cols = dist(t(merged_mat_clu)), -->
+<!--           color = colorRampPalette(c("blue", "white", "red"))(50), -->
+<!--           breaks = seq(-max_abs, max_abs, length.out = 51), -->
+<!--           #main = "Differentially abundant taxa (log2FC by Family)", -->
+<!--           fontsize_row = 10, -->
+<!--           fontsize_col = 14, -->
+<!--           na_col = "grey60", -->
+<!--           angle_col = 90) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- library(ComplexHeatmap) -->
+<!-- library(grid) -->
+
+<!-- max_abs <- max(abs(merged_mat), na.rm = TRUE) -->
+
+<!-- Heatmap(merged_mat, -->
+<!--   col = colorRampPalette(c("blue", "white", "red"))(50), -->
+<!--   cluster_rows = FALSE, -->
+<!--   cluster_columns = TRUE, -->
+<!--   name = "value", -->
+
+<!--   cell_fun = function(j, i, x, y, w, h, fill) { -->
+<!--     if (!is.na(dot_mat[i, j]) && dot_mat[i, j] == 1) { -->
+<!--       grid.points(x, y, pch = 16, size = unit(2.5, "mm")) -->
+<!--     } -->
+<!--   } -->
+<!-- ) -->
+
+<!-- ``` -->
+
+<!-- <!-- ## 4.4.2 Heatmap significant GSLs --> -->
+<!-- <!-- ### Subset GSLs --> -->
+<!-- <!-- ```{r} --> -->
+<!-- <!-- Sper_df3 <- Sper_df[ , c("Cat_weight", "R_Neoglucobrassicin", "R_Sinigrin", "R_Gluconapin", "R_Glucoerucin", "R_Glucoraphanin")] --> -->
+<!-- <!-- Sper_df3 --> -->
+
+<!-- <!-- Sper_df4 <- Sper_df2[ , c("Cat_weight", "R_Neoglucobrassicin", "R_Sinigrin", "R_Gluconapin", "R_Glucoerucin", "R_Glucoraphanin")] --> -->
+<!-- <!-- Sper_df4 --> -->
+
+<!-- <!-- Sper_mat3 <- as.matrix(Sper_df3) --> -->
+<!-- <!-- Sper_mat4 <- as.matrix(Sper_df4) --> -->
+<!-- <!-- ``` --> -->
+
+<!-- <!-- ### Heatmap  --> -->
+<!-- <!-- ```{r, fig.height=4, fig.width=5.2} --> -->
+<!-- <!-- max_abs <- max(abs(Sper_mat3), na.rm = TRUE) --> -->
+
+<!-- <!-- pheatmap(Sper_mat3, --> -->
+<!-- <!--           color = colorRampPalette(c("blue", "white", "red"))(50), --> -->
+<!-- <!--           breaks = seq(-max_abs, max_abs, length.out = 51), --> -->
+<!-- <!--           #main = "Differentially abundant taxa (log2FC by Family)", --> -->
+<!-- <!--           fontsize_row = 10, --> -->
+<!-- <!--           fontsize_col = 14, --> -->
+<!-- <!--           na_col = "grey60", --> -->
+<!-- <!--           angle_col = 90) --> -->
+<!-- <!-- ``` --> -->
+<!-- <!-- ```{r, fig.height=4, fig.width=6.2} --> -->
+<!-- <!-- pheatmap(Sper_mat4, --> -->
+<!-- <!--           color = colorRampPalette(c("blue", "white", "red"))(50), --> -->
+<!-- <!--           breaks = seq(-max_abs, max_abs, length.out = 51), --> -->
+<!-- <!--           #main = "Differentially abundant taxa (log2FC by Family)", --> -->
+<!-- <!--           fontsize_row = 10, --> -->
+<!-- <!--           fontsize_col = 14, --> -->
+<!-- <!--           na_col = "grey60", --> -->
+<!-- <!--           angle_col = 90) --> -->
+<!-- <!-- ``` --> -->
