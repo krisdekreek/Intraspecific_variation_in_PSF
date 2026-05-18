@@ -1,0 +1,504 @@
+Lmod has detected the following error: These module(s) or extension(s) exist
+but cannot be loaded as requested: "gcc"
+   Try: "module spider gcc" to see how to load the module(s).
+
+
+
+Lmod has detected the following error: These module(s) or extension(s) exist
+but cannot be loaded as requested: "shared"
+   Try: "module spider shared" to see how to load the module(s).
+
+
+
+[1] "R version 4.4.2 (2024-10-31)"
+Warning message:
+In dir.create(file.path(new_library), showWarnings = TRUE) :
+  '/home/WUR/kreek001/.R_442_ext' already exists
+[1] "/home/WUR/kreek001/.R_442_ext"                                              
+[2] "/shared/easybuild/software/noble/2024/zen3/R/4.4.2-gfbf-2024a/lib/R/library"
+Loading required package: Rcpp
+[1] '1.34.0'
+Loading required package: BiocGenerics
+
+Attaching package: 'BiocGenerics'
+
+The following objects are masked from 'package:stats':
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from 'package:base':
+
+    Filter, Find, Map, Position, Reduce, anyDuplicated, aperm, append,
+    as.data.frame, basename, cbind, colnames, dirname, do.call,
+    duplicated, eval, evalq, get, grep, grepl, intersect, is.unsorted,
+    lapply, mapply, match, mget, order, paste, pmax, pmax.int, pmin,
+    pmin.int, rank, rbind, rownames, sapply, saveRDS, setdiff, table,
+    tapply, union, unique, unsplit, which.max, which.min
+
+Loading required package: BiocParallel
+Loading required package: Biostrings
+Loading required package: S4Vectors
+Loading required package: stats4
+
+Attaching package: 'S4Vectors'
+
+The following object is masked from 'package:utils':
+
+    findMatches
+
+The following objects are masked from 'package:base':
+
+    I, expand.grid, unname
+
+Loading required package: IRanges
+Loading required package: XVector
+Loading required package: GenomeInfoDb
+
+Attaching package: 'Biostrings'
+
+The following object is masked from 'package:base':
+
+    strsplit
+
+Loading required package: Rsamtools
+Loading required package: GenomicRanges
+Loading required package: GenomicAlignments
+Loading required package: SummarizedExperiment
+Loading required package: MatrixGenerics
+Loading required package: matrixStats
+
+Attaching package: 'MatrixGenerics'
+
+The following objects are masked from 'package:matrixStats':
+
+    colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+    colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+    colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+    colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+    colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+    colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+    colWeightedMeans, colWeightedMedians, colWeightedSds,
+    colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+    rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+    rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+    rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+    rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+    rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+    rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+    rowWeightedSds, rowWeightedVars
+
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+Attaching package: 'Biobase'
+
+The following object is masked from 'package:MatrixGenerics':
+
+    rowMedians
+
+The following objects are masked from 'package:matrixStats':
+
+    anyMissing, rowMedians
+
+[1] '1.64.0'
+
+Attaching package: 'dplyr'
+
+The following object is masked from 'package:ShortRead':
+
+    id
+
+The following objects are masked from 'package:GenomicAlignments':
+
+    first, last
+
+The following object is masked from 'package:Biobase':
+
+    combine
+
+The following object is masked from 'package:matrixStats':
+
+    count
+
+The following objects are masked from 'package:GenomicRanges':
+
+    intersect, setdiff, union
+
+The following objects are masked from 'package:Biostrings':
+
+    collapse, intersect, setdiff, setequal, union
+
+The following object is masked from 'package:GenomeInfoDb':
+
+    intersect
+
+The following object is masked from 'package:XVector':
+
+    slice
+
+The following objects are masked from 'package:IRanges':
+
+    collapse, desc, intersect, setdiff, slice, union
+
+The following objects are masked from 'package:S4Vectors':
+
+    first, intersect, rename, setdiff, setequal, union
+
+The following objects are masked from 'package:BiocGenerics':
+
+    combine, intersect, setdiff, union
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+[1] '1.1.4'
+
+Attaching package: 'tidyr'
+
+The following object is masked from 'package:S4Vectors':
+
+    expand
+
+[1] '1.3.1'
+
+Attaching package: 'Hmisc'
+
+The following objects are masked from 'package:dplyr':
+
+    src, summarize
+
+The following object is masked from 'package:ShortRead':
+
+    zoom
+
+The following object is masked from 'package:Biobase':
+
+    contents
+
+The following objects are masked from 'package:Biostrings':
+
+    mask, translate
+
+The following objects are masked from 'package:base':
+
+    format.pval, units
+
+[1] '5.2.3'
+[1] '4.0.0'
+
+Attaching package: 'plotly'
+
+The following object is masked from 'package:ggplot2':
+
+    last_plot
+
+The following object is masked from 'package:Hmisc':
+
+    subplot
+
+The following object is masked from 'package:XVector':
+
+    slice
+
+The following object is masked from 'package:IRanges':
+
+    slice
+
+The following object is masked from 'package:S4Vectors':
+
+    rename
+
+The following object is masked from 'package:stats':
+
+    filter
+
+The following object is masked from 'package:graphics':
+
+    layout
+
+[1] '4.11.0'
+4.1
+  [1] "Blank2.raw_1.fastq.gz" "Blank2.raw_2.fastq.gz" "Blank3.raw_1.fastq.gz"
+  [4] "Blank3.raw_2.fastq.gz" "Blank4.raw_1.fastq.gz" "Blank4.raw_2.fastq.gz"
+  [7] "Blank5.raw_1.fastq.gz" "Blank5.raw_2.fastq.gz" "Blank6.raw_1.fastq.gz"
+ [10] "Blank6.raw_2.fastq.gz" "C005.raw_1.fastq.gz"   "C005.raw_2.fastq.gz"  
+ [13] "C006.raw_1.fastq.gz"   "C006.raw_2.fastq.gz"   "C007.raw_1.fastq.gz"  
+ [16] "C007.raw_2.fastq.gz"   "C009.raw_1.fastq.gz"   "C009.raw_2.fastq.gz"  
+ [19] "C010.raw_1.fastq.gz"   "C010.raw_2.fastq.gz"   "C015.raw_1.fastq.gz"  
+ [22] "C015.raw_2.fastq.gz"   "C016.raw_1.fastq.gz"   "C016.raw_2.fastq.gz"  
+ [25] "C017.raw_1.fastq.gz"   "C017.raw_2.fastq.gz"   "C018.raw_1.fastq.gz"  
+ [28] "C018.raw_2.fastq.gz"   "C019.raw_1.fastq.gz"   "C019.raw_2.fastq.gz"  
+ [31] "C020.raw_1.fastq.gz"   "C020.raw_2.fastq.gz"   "C025.raw_1.fastq.gz"  
+ [34] "C025.raw_2.fastq.gz"   "C026.raw_1.fastq.gz"   "C026.raw_2.fastq.gz"  
+ [37] "C027.raw_1.fastq.gz"   "C027.raw_2.fastq.gz"   "C028.raw_1.fastq.gz"  
+ [40] "C028.raw_2.fastq.gz"   "C029.raw_1.fastq.gz"   "C029.raw_2.fastq.gz"  
+ [43] "C030.raw_1.fastq.gz"   "C030.raw_2.fastq.gz"   "C035.raw_1.fastq.gz"  
+ [46] "C035.raw_2.fastq.gz"   "C036.raw_1.fastq.gz"   "C036.raw_2.fastq.gz"  
+ [49] "C037.raw_1.fastq.gz"   "C037.raw_2.fastq.gz"   "C038.raw_1.fastq.gz"  
+ [52] "C038.raw_2.fastq.gz"   "C039.raw_1.fastq.gz"   "C039.raw_2.fastq.gz"  
+ [55] "C040.raw_1.fastq.gz"   "C040.raw_2.fastq.gz"   "C043.raw_1.fastq.gz"  
+ [58] "C043.raw_2.fastq.gz"   "C045.raw_1.fastq.gz"   "C045.raw_2.fastq.gz"  
+ [61] "C047.raw_1.fastq.gz"   "C047.raw_2.fastq.gz"   "C048.raw_1.fastq.gz"  
+ [64] "C048.raw_2.fastq.gz"   "C050.raw_1.fastq.gz"   "C050.raw_2.fastq.gz"  
+ [67] "C055.raw_1.fastq.gz"   "C055.raw_2.fastq.gz"   "C056.raw_1.fastq.gz"  
+ [70] "C056.raw_2.fastq.gz"   "C057.raw_1.fastq.gz"   "C057.raw_2.fastq.gz"  
+ [73] "C058.raw_1.fastq.gz"   "C058.raw_2.fastq.gz"   "C059.raw_1.fastq.gz"  
+ [76] "C059.raw_2.fastq.gz"   "C060.raw_1.fastq.gz"   "C060.raw_2.fastq.gz"  
+ [79] "C064.raw_1.fastq.gz"   "C064.raw_2.fastq.gz"   "C065.raw_1.fastq.gz"  
+ [82] "C065.raw_2.fastq.gz"   "C066.raw_1.fastq.gz"   "C066.raw_2.fastq.gz"  
+ [85] "C067.raw_1.fastq.gz"   "C067.raw_2.fastq.gz"   "C068.raw_1.fastq.gz"  
+ [88] "C068.raw_2.fastq.gz"   "C069.raw_1.fastq.gz"   "C069.raw_2.fastq.gz"  
+ [91] "C075.raw_1.fastq.gz"   "C075.raw_2.fastq.gz"   "C076.raw_1.fastq.gz"  
+ [94] "C076.raw_2.fastq.gz"   "C077.raw_1.fastq.gz"   "C077.raw_2.fastq.gz"  
+ [97] "C078.raw_1.fastq.gz"   "C078.raw_2.fastq.gz"   "C079.raw_1.fastq.gz"  
+[100] "C079.raw_2.fastq.gz"   "C080.raw_1.fastq.gz"   "C080.raw_2.fastq.gz"  
+[103] "C085.raw_1.fastq.gz"   "C085.raw_2.fastq.gz"   "C086.raw_1.fastq.gz"  
+[106] "C086.raw_2.fastq.gz"   "C087.raw_1.fastq.gz"   "C087.raw_2.fastq.gz"  
+[109] "C088.raw_1.fastq.gz"   "C088.raw_2.fastq.gz"   "C089.raw_1.fastq.gz"  
+[112] "C089.raw_2.fastq.gz"   "C090.raw_1.fastq.gz"   "C090.raw_2.fastq.gz"  
+[115] "C094.raw_1.fastq.gz"   "C094.raw_2.fastq.gz"   "C095.raw_1.fastq.gz"  
+[118] "C095.raw_2.fastq.gz"   "C096.raw_1.fastq.gz"   "C096.raw_2.fastq.gz"  
+[121] "C097.raw_1.fastq.gz"   "C097.raw_2.fastq.gz"   "C099.raw_1.fastq.gz"  
+[124] "C099.raw_2.fastq.gz"   "C101.raw_1.fastq.gz"   "C101.raw_2.fastq.gz"  
+[127] "C104.raw_1.fastq.gz"   "C104.raw_2.fastq.gz"   "C105.raw_1.fastq.gz"  
+[130] "C105.raw_2.fastq.gz"   "C106.raw_1.fastq.gz"   "C106.raw_2.fastq.gz"  
+[133] "C110.raw_1.fastq.gz"   "C110.raw_2.fastq.gz"   "C113.raw_1.fastq.gz"  
+[136] "C113.raw_2.fastq.gz"   "C115.raw_1.fastq.gz"   "C115.raw_2.fastq.gz"  
+[139] "C116.raw_1.fastq.gz"   "C116.raw_2.fastq.gz"   "C117.raw_1.fastq.gz"  
+[142] "C117.raw_2.fastq.gz"   "C118.raw_1.fastq.gz"   "C118.raw_2.fastq.gz"  
+[145] "C120.raw_1.fastq.gz"   "C120.raw_2.fastq.gz"   "C126.raw_1.fastq.gz"  
+[148] "C126.raw_2.fastq.gz"   "C127.raw_1.fastq.gz"   "C127.raw_2.fastq.gz"  
+[151] "C128.raw_1.fastq.gz"   "C128.raw_2.fastq.gz"   "C129.raw_1.fastq.gz"  
+[154] "C129.raw_2.fastq.gz"   "C130.raw_1.fastq.gz"   "C130.raw_2.fastq.gz"  
+[157] "C135.raw_1.fastq.gz"   "C135.raw_2.fastq.gz"   "C136.raw_1.fastq.gz"  
+[160] "C136.raw_2.fastq.gz"   "C137.raw_1.fastq.gz"   "C137.raw_2.fastq.gz"  
+[163] "C138.raw_1.fastq.gz"   "C138.raw_2.fastq.gz"   "C139.raw_1.fastq.gz"  
+[166] "C139.raw_2.fastq.gz"   "C140.raw_1.fastq.gz"   "C140.raw_2.fastq.gz"  
+[169] "C145.raw_1.fastq.gz"   "C145.raw_2.fastq.gz"   "C146.raw_1.fastq.gz"  
+[172] "C146.raw_2.fastq.gz"   "C147.raw_1.fastq.gz"   "C147.raw_2.fastq.gz"  
+[175] "C148.raw_1.fastq.gz"   "C148.raw_2.fastq.gz"   "C149.raw_1.fastq.gz"  
+[178] "C149.raw_2.fastq.gz"   "C150.raw_1.fastq.gz"   "C150.raw_2.fastq.gz"  
+[181] "C155.raw_1.fastq.gz"   "C155.raw_2.fastq.gz"   "C156.raw_1.fastq.gz"  
+[184] "C156.raw_2.fastq.gz"   "C157.raw_1.fastq.gz"   "C157.raw_2.fastq.gz"  
+[187] "C158.raw_1.fastq.gz"   "C158.raw_2.fastq.gz"   "C159.raw_1.fastq.gz"  
+[190] "C159.raw_2.fastq.gz"   "C160.raw_1.fastq.gz"   "C160.raw_2.fastq.gz"  
+[193] "C165.raw_1.fastq.gz"   "C165.raw_2.fastq.gz"   "C166.raw_1.fastq.gz"  
+[196] "C166.raw_2.fastq.gz"   "C167.raw_1.fastq.gz"   "C167.raw_2.fastq.gz"  
+[199] "C168.raw_1.fastq.gz"   "C168.raw_2.fastq.gz"   "C169.raw_1.fastq.gz"  
+[202] "C169.raw_2.fastq.gz"   "C170.raw_1.fastq.gz"   "C170.raw_2.fastq.gz"  
+[205] "C175.raw_1.fastq.gz"   "C175.raw_2.fastq.gz"   "C176.raw_1.fastq.gz"  
+[208] "C176.raw_2.fastq.gz"   "C177.raw_1.fastq.gz"   "C177.raw_2.fastq.gz"  
+[211] "C178.raw_1.fastq.gz"   "C178.raw_2.fastq.gz"   "C179.raw_1.fastq.gz"  
+[214] "C179.raw_2.fastq.gz"   "C180.raw_1.fastq.gz"   "C180.raw_2.fastq.gz"  
+[217] "C185.raw_1.fastq.gz"   "C185.raw_2.fastq.gz"   "C186.raw_1.fastq.gz"  
+[220] "C186.raw_2.fastq.gz"   "C187.raw_1.fastq.gz"   "C187.raw_2.fastq.gz"  
+[223] "C188.raw_1.fastq.gz"   "C188.raw_2.fastq.gz"   "C189.raw_1.fastq.gz"  
+[226] "C189.raw_2.fastq.gz"   "C190.raw_1.fastq.gz"   "C190.raw_2.fastq.gz"  
+[229] "C195.raw_1.fastq.gz"   "C195.raw_2.fastq.gz"   "C196.raw_1.fastq.gz"  
+[232] "C196.raw_2.fastq.gz"   "C197.raw_1.fastq.gz"   "C197.raw_2.fastq.gz"  
+[235] "C198.raw_1.fastq.gz"   "C198.raw_2.fastq.gz"   "C199.raw_1.fastq.gz"  
+[238] "C199.raw_2.fastq.gz"   "C200.raw_1.fastq.gz"   "C200.raw_2.fastq.gz"  
+[241] "C205.raw_1.fastq.gz"   "C205.raw_2.fastq.gz"   "C206.raw_1.fastq.gz"  
+[244] "C206.raw_2.fastq.gz"   "C207.raw_1.fastq.gz"   "C207.raw_2.fastq.gz"  
+[247] "C208.raw_1.fastq.gz"   "C208.raw_2.fastq.gz"   "C209.raw_1.fastq.gz"  
+[250] "C209.raw_2.fastq.gz"   "C210.raw_1.fastq.gz"   "C210.raw_2.fastq.gz"  
+[253] "C215.raw_1.fastq.gz"   "C215.raw_2.fastq.gz"   "C216.raw_1.fastq.gz"  
+[256] "C216.raw_2.fastq.gz"   "C217.raw_1.fastq.gz"   "C217.raw_2.fastq.gz"  
+[259] "C218.raw_1.fastq.gz"   "C218.raw_2.fastq.gz"   "C219.raw_1.fastq.gz"  
+[262] "C219.raw_2.fastq.gz"   "C220.raw_1.fastq.gz"   "C220.raw_2.fastq.gz"  
+[265] "C225.raw_1.fastq.gz"   "C225.raw_2.fastq.gz"   "C226.raw_1.fastq.gz"  
+[268] "C226.raw_2.fastq.gz"   "C227.raw_1.fastq.gz"   "C227.raw_2.fastq.gz"  
+[271] "C228.raw_1.fastq.gz"   "C228.raw_2.fastq.gz"   "C229.raw_1.fastq.gz"  
+[274] "C229.raw_2.fastq.gz"   "C230.raw_1.fastq.gz"   "C230.raw_2.fastq.gz"  
+[277] "C235.raw_1.fastq.gz"   "C235.raw_2.fastq.gz"   "C236.raw_1.fastq.gz"  
+[280] "C236.raw_2.fastq.gz"   "C237.raw_1.fastq.gz"   "C237.raw_2.fastq.gz"  
+[283] "C238.raw_1.fastq.gz"   "C238.raw_2.fastq.gz"   "C239.raw_1.fastq.gz"  
+[286] "C239.raw_2.fastq.gz"   "C240.raw_1.fastq.gz"   "C240.raw_2.fastq.gz"  
+[289] "C245.raw_1.fastq.gz"   "C245.raw_2.fastq.gz"   "C246.raw_1.fastq.gz"  
+[292] "C246.raw_2.fastq.gz"   "C247.raw_1.fastq.gz"   "C247.raw_2.fastq.gz"  
+[295] "C248.raw_1.fastq.gz"   "C248.raw_2.fastq.gz"   "C249.raw_1.fastq.gz"  
+[298] "C249.raw_2.fastq.gz"   "C250.raw_1.fastq.gz"   "C250.raw_2.fastq.gz"  
+[301] "C255.raw_1.fastq.gz"   "C255.raw_2.fastq.gz"   "C256.raw_1.fastq.gz"  
+[304] "C256.raw_2.fastq.gz"   "C257.raw_1.fastq.gz"   "C257.raw_2.fastq.gz"  
+[307] "C258.raw_1.fastq.gz"   "C258.raw_2.fastq.gz"   "C259.raw_1.fastq.gz"  
+[310] "C259.raw_2.fastq.gz"   "C260.raw_1.fastq.gz"   "C260.raw_2.fastq.gz"  
+[313] "C265.raw_1.fastq.gz"   "C265.raw_2.fastq.gz"   "C266.raw_1.fastq.gz"  
+[316] "C266.raw_2.fastq.gz"   "C267.raw_1.fastq.gz"   "C267.raw_2.fastq.gz"  
+[319] "C268.raw_1.fastq.gz"   "C268.raw_2.fastq.gz"   "C269.raw_1.fastq.gz"  
+[322] "C269.raw_2.fastq.gz"   "C270.raw_1.fastq.gz"   "C270.raw_2.fastq.gz"  
+[325] "C275.raw_1.fastq.gz"   "C275.raw_2.fastq.gz"   "C276.raw_1.fastq.gz"  
+[328] "C276.raw_2.fastq.gz"   "C277.raw_1.fastq.gz"   "C277.raw_2.fastq.gz"  
+[331] "C278.raw_1.fastq.gz"   "C278.raw_2.fastq.gz"   "C279.raw_1.fastq.gz"  
+[334] "C279.raw_2.fastq.gz"   "C285.raw_1.fastq.gz"   "C285.raw_2.fastq.gz"  
+[337] "C286.raw_1.fastq.gz"   "C286.raw_2.fastq.gz"   "C287.raw_1.fastq.gz"  
+[340] "C287.raw_2.fastq.gz"   "C288.raw_1.fastq.gz"   "C288.raw_2.fastq.gz"  
+[343] "C289.raw_1.fastq.gz"   "C289.raw_2.fastq.gz"   "C290.raw_1.fastq.gz"  
+[346] "C290.raw_2.fastq.gz"   "C295.raw_1.fastq.gz"   "C295.raw_2.fastq.gz"  
+[349] "C296.raw_1.fastq.gz"   "C296.raw_2.fastq.gz"   "C297.raw_1.fastq.gz"  
+[352] "C297.raw_2.fastq.gz"   "C298.raw_1.fastq.gz"   "C298.raw_2.fastq.gz"  
+[355] "C299.raw_1.fastq.gz"   "C299.raw_2.fastq.gz"   "C300.raw_1.fastq.gz"  
+[358] "C300.raw_2.fastq.gz"   "C305.raw_1.fastq.gz"   "C305.raw_2.fastq.gz"  
+[361] "C306.raw_1.fastq.gz"   "C306.raw_2.fastq.gz"   "C307.raw_1.fastq.gz"  
+[364] "C307.raw_2.fastq.gz"   "C308.raw_1.fastq.gz"   "C308.raw_2.fastq.gz"  
+[367] "C309.raw_1.fastq.gz"   "C309.raw_2.fastq.gz"   "C310.raw_1.fastq.gz"  
+[370] "C310.raw_2.fastq.gz"   "C315.raw_1.fastq.gz"   "C315.raw_2.fastq.gz"  
+[373] "C316.raw_1.fastq.gz"   "C316.raw_2.fastq.gz"   "C317.raw_1.fastq.gz"  
+[376] "C317.raw_2.fastq.gz"   "C318.raw_1.fastq.gz"   "C318.raw_2.fastq.gz"  
+[379] "C319.raw_1.fastq.gz"   "C319.raw_2.fastq.gz"   "C320.raw_1.fastq.gz"  
+[382] "C320.raw_2.fastq.gz"   "C323.raw_1.fastq.gz"   "C323.raw_2.fastq.gz"  
+[385] "C326.raw_1.fastq.gz"   "C326.raw_2.fastq.gz"   "C327.raw_1.fastq.gz"  
+[388] "C327.raw_2.fastq.gz"   "C328.raw_1.fastq.gz"   "C328.raw_2.fastq.gz"  
+[391] "C329.raw_1.fastq.gz"   "C329.raw_2.fastq.gz"   "C330.raw_1.fastq.gz"  
+[394] "C330.raw_2.fastq.gz"   "C335.raw_1.fastq.gz"   "C335.raw_2.fastq.gz"  
+[397] "C336.raw_1.fastq.gz"   "C336.raw_2.fastq.gz"   "C337.raw_1.fastq.gz"  
+[400] "C337.raw_2.fastq.gz"   "C338.raw_1.fastq.gz"   "C338.raw_2.fastq.gz"  
+[403] "C339.raw_1.fastq.gz"   "C339.raw_2.fastq.gz"   "C340.raw_1.fastq.gz"  
+[406] "C340.raw_2.fastq.gz"   "C345.raw_1.fastq.gz"   "C345.raw_2.fastq.gz"  
+[409] "C346.raw_1.fastq.gz"   "C346.raw_2.fastq.gz"   "C347.raw_1.fastq.gz"  
+[412] "C347.raw_2.fastq.gz"   "C348.raw_1.fastq.gz"   "C348.raw_2.fastq.gz"  
+[415] "C349.raw_1.fastq.gz"   "C349.raw_2.fastq.gz"   "C350.raw_1.fastq.gz"  
+[418] "C350.raw_2.fastq.gz"   "C355.raw_1.fastq.gz"   "C355.raw_2.fastq.gz"  
+[421] "C356.raw_1.fastq.gz"   "C356.raw_2.fastq.gz"   "C357.raw_1.fastq.gz"  
+[424] "C357.raw_2.fastq.gz"   "C358.raw_1.fastq.gz"   "C358.raw_2.fastq.gz"  
+[427] "C359.raw_1.fastq.gz"   "C359.raw_2.fastq.gz"   "C360.raw_1.fastq.gz"  
+[430] "C360.raw_2.fastq.gz"   "C365.raw_1.fastq.gz"   "C365.raw_2.fastq.gz"  
+[433] "C366.raw_1.fastq.gz"   "C366.raw_2.fastq.gz"   "C367.raw_1.fastq.gz"  
+[436] "C367.raw_2.fastq.gz"   "C368.raw_1.fastq.gz"   "C368.raw_2.fastq.gz"  
+[439] "C369.raw_1.fastq.gz"   "C369.raw_2.fastq.gz"   "C370.raw_1.fastq.gz"  
+[442] "C370.raw_2.fastq.gz"   "C375.raw_1.fastq.gz"   "C375.raw_2.fastq.gz"  
+[445] "C376.raw_1.fastq.gz"   "C376.raw_2.fastq.gz"   "C377.raw_1.fastq.gz"  
+[448] "C377.raw_2.fastq.gz"   "C378.raw_1.fastq.gz"   "C378.raw_2.fastq.gz"  
+[451] "C379.raw_1.fastq.gz"   "C379.raw_2.fastq.gz"   "C380.raw_1.fastq.gz"  
+[454] "C380.raw_2.fastq.gz"   "C385.raw_1.fastq.gz"   "C385.raw_2.fastq.gz"  
+[457] "C386.raw_1.fastq.gz"   "C386.raw_2.fastq.gz"   "C387.raw_1.fastq.gz"  
+[460] "C387.raw_2.fastq.gz"   "C388.raw_1.fastq.gz"   "C388.raw_2.fastq.gz"  
+[463] "C389.raw_1.fastq.gz"   "C389.raw_2.fastq.gz"   "C390.raw_1.fastq.gz"  
+[466] "C390.raw_2.fastq.gz"   "C395.raw_1.fastq.gz"   "C395.raw_2.fastq.gz"  
+[469] "C396.raw_1.fastq.gz"   "C396.raw_2.fastq.gz"   "C397.raw_1.fastq.gz"  
+[472] "C397.raw_2.fastq.gz"   "C398.raw_1.fastq.gz"   "C398.raw_2.fastq.gz"  
+[475] "C399.raw_1.fastq.gz"   "C399.raw_2.fastq.gz"   "C400.raw_1.fastq.gz"  
+[478] "C400.raw_2.fastq.gz"   "C405.raw_1.fastq.gz"   "C405.raw_2.fastq.gz"  
+[481] "C406.raw_1.fastq.gz"   "C406.raw_2.fastq.gz"   "C407.raw_1.fastq.gz"  
+[484] "C407.raw_2.fastq.gz"   "C408.raw_1.fastq.gz"   "C408.raw_2.fastq.gz"  
+[487] "C409.raw_1.fastq.gz"   "C409.raw_2.fastq.gz"   "C410.raw_1.fastq.gz"  
+[490] "C410.raw_2.fastq.gz"   "C415.raw_1.fastq.gz"   "C415.raw_2.fastq.gz"  
+[493] "C416.raw_1.fastq.gz"   "C416.raw_2.fastq.gz"   "C417.raw_1.fastq.gz"  
+[496] "C417.raw_2.fastq.gz"   "C418.raw_1.fastq.gz"   "C418.raw_2.fastq.gz"  
+[499] "C419.raw_1.fastq.gz"   "C419.raw_2.fastq.gz"   "C420.raw_1.fastq.gz"  
+[502] "C420.raw_2.fastq.gz"   "C425.raw_1.fastq.gz"   "C425.raw_2.fastq.gz"  
+[505] "C426.raw_1.fastq.gz"   "C426.raw_2.fastq.gz"   "C427.raw_1.fastq.gz"  
+[508] "C427.raw_2.fastq.gz"   "C428.raw_1.fastq.gz"   "C428.raw_2.fastq.gz"  
+[511] "C429.raw_1.fastq.gz"   "C429.raw_2.fastq.gz"   "C430.raw_1.fastq.gz"  
+[514] "C430.raw_2.fastq.gz"   "C435.raw_1.fastq.gz"   "C435.raw_2.fastq.gz"  
+[517] "C436.raw_1.fastq.gz"   "C436.raw_2.fastq.gz"   "C437.raw_1.fastq.gz"  
+[520] "C437.raw_2.fastq.gz"   "C438.raw_1.fastq.gz"   "C438.raw_2.fastq.gz"  
+[523] "C439.raw_1.fastq.gz"   "C439.raw_2.fastq.gz"   "C440.raw_1.fastq.gz"  
+[526] "C440.raw_2.fastq.gz"   "C444.raw_1.fastq.gz"   "C444.raw_2.fastq.gz"  
+[529] "C445.raw_1.fastq.gz"   "C445.raw_2.fastq.gz"   "C447.raw_1.fastq.gz"  
+[532] "C447.raw_2.fastq.gz"   "C448.raw_1.fastq.gz"   "C448.raw_2.fastq.gz"  
+[535] "C449.raw_1.fastq.gz"   "C449.raw_2.fastq.gz"   "C450.raw_1.fastq.gz"  
+[538] "C450.raw_2.fastq.gz"   "C455.raw_1.fastq.gz"   "C455.raw_2.fastq.gz"  
+[541] "C456.raw_1.fastq.gz"   "C456.raw_2.fastq.gz"   "C457.raw_1.fastq.gz"  
+[544] "C457.raw_2.fastq.gz"   "C458.raw_1.fastq.gz"   "C458.raw_2.fastq.gz"  
+[547] "C459.raw_1.fastq.gz"   "C459.raw_2.fastq.gz"   "C460.raw_1.fastq.gz"  
+[550] "C460.raw_2.fastq.gz"   "C462.raw_1.fastq.gz"   "C462.raw_2.fastq.gz"  
+[553] "C465.raw_1.fastq.gz"   "C465.raw_2.fastq.gz"   "C466.raw_1.fastq.gz"  
+[556] "C466.raw_2.fastq.gz"   "C467.raw_1.fastq.gz"   "C467.raw_2.fastq.gz"  
+[559] "C468.raw_1.fastq.gz"   "C468.raw_2.fastq.gz"   "C470.raw_1.fastq.gz"  
+[562] "C470.raw_2.fastq.gz"   "C475.raw_1.fastq.gz"   "C475.raw_2.fastq.gz"  
+[565] "C476.raw_1.fastq.gz"   "C476.raw_2.fastq.gz"   "C477.raw_1.fastq.gz"  
+[568] "C477.raw_2.fastq.gz"   "C478.raw_1.fastq.gz"   "C478.raw_2.fastq.gz"  
+[571] "C479.raw_1.fastq.gz"   "C479.raw_2.fastq.gz"   "C480.raw_1.fastq.gz"  
+[574] "C480.raw_2.fastq.gz"   "CE33.raw_1.fastq.gz"   "CE33.raw_2.fastq.gz"  
+[577] "CTRL1.raw_1.fastq.gz"  "CTRL1.raw_2.fastq.gz"  "CTRL10.raw_1.fastq.gz"
+[580] "CTRL10.raw_2.fastq.gz" "CTRL2.raw_1.fastq.gz"  "CTRL2.raw_2.fastq.gz" 
+[583] "CTRL3.raw_1.fastq.gz"  "CTRL3.raw_2.fastq.gz"  "CTRL4.raw_1.fastq.gz" 
+[586] "CTRL4.raw_2.fastq.gz"  "CTRL5.raw_1.fastq.gz"  "CTRL5.raw_2.fastq.gz" 
+[589] "CTRL6.raw_1.fastq.gz"  "CTRL6.raw_2.fastq.gz"  "CTRL7.raw_1.fastq.gz" 
+[592] "CTRL7.raw_2.fastq.gz"  "CTRL8.raw_1.fastq.gz"  "CTRL8.raw_2.fastq.gz" 
+[595] "CTRL9.raw_1.fastq.gz"  "CTRL9.raw_2.fastq.gz"  "F005.raw_1.fastq.gz"  
+[598] "F005.raw_2.fastq.gz"   "F006.raw_1.fastq.gz"   "F006.raw_2.fastq.gz"  
+[601] "F007.raw_1.fastq.gz"   "F007.raw_2.fastq.gz"   "F008.raw_1.fastq.gz"  
+[604] "F008.raw_2.fastq.gz"   "F009.raw_1.fastq.gz"   "F009.raw_2.fastq.gz"  
+[607] "F010.raw_1.fastq.gz"   "F010.raw_2.fastq.gz"   "F015.raw_1.fastq.gz"  
+[610] "F015.raw_2.fastq.gz"   "F016.raw_1.fastq.gz"   "F016.raw_2.fastq.gz"  
+[613] "F017.raw_1.fastq.gz"   "F017.raw_2.fastq.gz"   "F018.raw_1.fastq.gz"  
+[616] "F018.raw_2.fastq.gz"   "F019.raw_1.fastq.gz"   "F019.raw_2.fastq.gz"  
+[619] "F020.raw_1.fastq.gz"   "F020.raw_2.fastq.gz"   "F025.raw_1.fastq.gz"  
+[622] "F025.raw_2.fastq.gz"   "F026.raw_1.fastq.gz"   "F026.raw_2.fastq.gz"  
+[625] "F027.raw_1.fastq.gz"   "F027.raw_2.fastq.gz"   "F029.raw_1.fastq.gz"  
+[628] "F029.raw_2.fastq.gz"   "F030.raw_1.fastq.gz"   "F030.raw_2.fastq.gz"  
+[631] "F035.raw_1.fastq.gz"   "F035.raw_2.fastq.gz"   "F036.raw_1.fastq.gz"  
+[634] "F036.raw_2.fastq.gz"   "F037.raw_1.fastq.gz"   "F037.raw_2.fastq.gz"  
+[637] "F038.raw_1.fastq.gz"   "F038.raw_2.fastq.gz"   "F039.raw_1.fastq.gz"  
+[640] "F039.raw_2.fastq.gz"   "F040.raw_1.fastq.gz"   "F040.raw_2.fastq.gz"  
+[643] "F085.raw_1.fastq.gz"   "F085.raw_2.fastq.gz"   "F086.raw_1.fastq.gz"  
+[646] "F086.raw_2.fastq.gz"   "F087.raw_1.fastq.gz"   "F087.raw_2.fastq.gz"  
+[649] "F088.raw_1.fastq.gz"   "F088.raw_2.fastq.gz"   "F089.raw_1.fastq.gz"  
+[652] "F089.raw_2.fastq.gz"   "F090.raw_1.fastq.gz"   "F090.raw_2.fastq.gz"  
+[655] "F095.raw_1.fastq.gz"   "F095.raw_2.fastq.gz"   "F096.raw_1.fastq.gz"  
+[658] "F096.raw_2.fastq.gz"   "F097.raw_1.fastq.gz"   "F097.raw_2.fastq.gz"  
+[661] "F098.raw_1.fastq.gz"   "F098.raw_2.fastq.gz"   "F099.raw_1.fastq.gz"  
+[664] "F099.raw_2.fastq.gz"   "F100.raw_1.fastq.gz"   "F100.raw_2.fastq.gz"  
+[667] "F105.raw_1.fastq.gz"   "F105.raw_2.fastq.gz"   "F106.raw_1.fastq.gz"  
+[670] "F106.raw_2.fastq.gz"   "F107.raw_1.fastq.gz"   "F107.raw_2.fastq.gz"  
+[673] "F108.raw_1.fastq.gz"   "F108.raw_2.fastq.gz"   "F109.raw_1.fastq.gz"  
+[676] "F109.raw_2.fastq.gz"   "F110.raw_1.fastq.gz"   "F110.raw_2.fastq.gz"  
+[679] "F115.raw_1.fastq.gz"   "F115.raw_2.fastq.gz"   "F116.raw_1.fastq.gz"  
+[682] "F116.raw_2.fastq.gz"   "F117.raw_1.fastq.gz"   "F117.raw_2.fastq.gz"  
+[685] "F118.raw_1.fastq.gz"   "F118.raw_2.fastq.gz"   "F119.raw_1.fastq.gz"  
+[688] "F119.raw_2.fastq.gz"   "F120.raw_1.fastq.gz"   "F120.raw_2.fastq.gz"  
+[691] "F175.raw_1.fastq.gz"   "F175.raw_2.fastq.gz"   "F176.raw_1.fastq.gz"  
+[694] "F176.raw_2.fastq.gz"   "F177.raw_1.fastq.gz"   "F177.raw_2.fastq.gz"  
+[697] "F178.raw_1.fastq.gz"   "F178.raw_2.fastq.gz"   "F179.raw_1.fastq.gz"  
+[700] "F179.raw_2.fastq.gz"   "F180.raw_1.fastq.gz"   "F180.raw_2.fastq.gz"  
+[703] "F193.raw_1.fastq.gz"   "F193.raw_2.fastq.gz"   "F194.raw_1.fastq.gz"  
+[706] "F194.raw_2.fastq.gz"   "F195.raw_1.fastq.gz"   "F195.raw_2.fastq.gz"  
+[709] "F197.raw_1.fastq.gz"   "F197.raw_2.fastq.gz"   "F199.raw_1.fastq.gz"  
+[712] "F199.raw_2.fastq.gz"   "F200.raw_1.fastq.gz"   "F200.raw_2.fastq.gz"  
+[715] "F371.raw_1.fastq.gz"   "F371.raw_2.fastq.gz"   "F372.raw_1.fastq.gz"  
+[718] "F372.raw_2.fastq.gz"   "F373.raw_1.fastq.gz"   "F373.raw_2.fastq.gz"  
+[721] "F374.raw_1.fastq.gz"   "F374.raw_2.fastq.gz"   "F375.raw_1.fastq.gz"  
+[724] "F375.raw_2.fastq.gz"   "F376.raw_1.fastq.gz"   "F376.raw_2.fastq.gz"  
+[727] "F377.raw_1.fastq.gz"   "F377.raw_2.fastq.gz"   "F378.raw_1.fastq.gz"  
+[730] "F378.raw_2.fastq.gz"   "F379.raw_1.fastq.gz"   "F379.raw_2.fastq.gz"  
+[733] "F380.raw_1.fastq.gz"   "F380.raw_2.fastq.gz"   "F391.raw_1.fastq.gz"  
+[736] "F391.raw_2.fastq.gz"   "F392.raw_1.fastq.gz"   "F392.raw_2.fastq.gz"  
+[739] "F393.raw_1.fastq.gz"   "F393.raw_2.fastq.gz"   "F394.raw_1.fastq.gz"  
+[742] "F394.raw_2.fastq.gz"   "F395.raw_1.fastq.gz"   "F395.raw_2.fastq.gz"  
+[745] "F396.raw_1.fastq.gz"   "F396.raw_2.fastq.gz"   "F397.raw_1.fastq.gz"  
+[748] "F397.raw_2.fastq.gz"   "F398.raw_1.fastq.gz"   "F398.raw_2.fastq.gz"  
+[751] "F399.raw_1.fastq.gz"   "F399.raw_2.fastq.gz"   "F400.raw_1.fastq.gz"  
+[754] "F400.raw_2.fastq.gz"   "F455.raw_1.fastq.gz"   "F455.raw_2.fastq.gz"  
+[757] "F456.raw_1.fastq.gz"   "F456.raw_2.fastq.gz"   "F457.raw_1.fastq.gz"  
+[760] "F457.raw_2.fastq.gz"   "F458.raw_1.fastq.gz"   "F458.raw_2.fastq.gz"  
+[763] "F459.raw_1.fastq.gz"   "F459.raw_2.fastq.gz"   "F460.raw_1.fastq.gz"  
+[766] "F460.raw_2.fastq.gz"   "F475.raw_1.fastq.gz"   "F475.raw_2.fastq.gz"  
+[769] "F476.raw_1.fastq.gz"   "F476.raw_2.fastq.gz"   "F477.raw_1.fastq.gz"  
+[772] "F477.raw_2.fastq.gz"   "F478.raw_1.fastq.gz"   "F478.raw_2.fastq.gz"  
+[775] "F479.raw_1.fastq.gz"   "F479.raw_2.fastq.gz"   "F522.raw_1.fastq.gz"  
+[778] "F522.raw_2.fastq.gz"   "F523.raw_1.fastq.gz"   "F523.raw_2.fastq.gz"  
+[781] "F524.raw_1.fastq.gz"   "F524.raw_2.fastq.gz"   "F525.raw_1.fastq.gz"  
+[784] "F525.raw_2.fastq.gz"   "F526.raw_1.fastq.gz"   "F526.raw_2.fastq.gz"  
+[787] "F527.raw_1.fastq.gz"   "F527.raw_2.fastq.gz"   "F528.raw_1.fastq.gz"  
+[790] "F528.raw_2.fastq.gz"   "F529.raw_1.fastq.gz"   "F529.raw_2.fastq.gz"  
+[793] "F530.raw_1.fastq.gz"   "F530.raw_2.fastq.gz"   "F532.raw_1.fastq.gz"  
+[796] "F532.raw_2.fastq.gz"   "F533.raw_1.fastq.gz"   "F533.raw_2.fastq.gz"  
+[799] "F534.raw_1.fastq.gz"   "F534.raw_2.fastq.gz"   "F536.raw_1.fastq.gz"  
+[802] "F536.raw_2.fastq.gz"   "F538.raw_1.fastq.gz"   "F538.raw_2.fastq.gz"  
+[805] "F539.raw_1.fastq.gz"   "F539.raw_2.fastq.gz"   "F540.raw_1.fastq.gz"  
+[808] "F540.raw_2.fastq.gz"   "FE104.raw_1.fastq.gz"  "FE104.raw_2.fastq.gz" 
+[811] "FE98.raw_1.fastq.gz"   "FE98.raw_2.fastq.gz"  
+Warning message:
+In dir.create(project.fp) :
+  '/lustre/nobackup/INDIVIDUAL/kreek001/TwelveAccessionExp_AllData_output_slurm' already exists
