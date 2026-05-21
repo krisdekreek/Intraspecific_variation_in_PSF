@@ -1,0 +1,267 @@
+---
+title: "CP_04_differential_abundance_Summary_Results - Heatmaps"
+author: "Kris de Kreek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+This script is adapted from a script form Melissa Uribe Acosta. Extra input comes from a script of Pedro Beschore da Costa.   
+   
+   
+Tutorials   
+- [Heatmap for final plot](http://rstudio-pubs-static.s3.amazonaws.com/288398_185f2889a5f641c6b9aa7b14fa15b634.html)
+- [Excamples of pheatmap package](https://davetang.github.io/muse/pheatmap.html)   
+   
+   
+# 4.0 load libraries, improve memory use and subset objects for the desired treatment comparisons
+### Load libraries
+```{r, warning = FALSE, message=FALSE}
+R.version$version.string # prints R version
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(pheatmap)
+packageVersion("pheatmap")
+library(dplyr)
+packageVersion("dplyr")
+library(stringr)
+packageVersion("stringr")
+```
+
+
+# 4.10 Heatmap log2fold change
+## 4.10.1 Accessions seperate
+
+### Heatmap At ASV level DA ASVs occuring twice
+#### Load data
+```{r}
+# load phyloseq object
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/Data/R_objects/CP_unnormalized_bac_ps_ForDA.RData")
+
+# load DA ASVs
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/Data/R_objects/CP_DA_SummaryFiles_ASVLevel/Acc_Bac_TwoTimes_DA_ASV.RData")
+
+# load log2fold change values
+load(file = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/Data/R_objects/CP_DA_Ancom_ASVLevel/ancomWZ_Bac_Acc.RData")
+```
+
+#### Combine DA ASVs per accession
+```{r}
+# Numer of DA ASVs
+lapply(Acc_Bac_TwoTimes_DA_ASV, function(x) length(x))
+length(unique(unlist(Acc_Bac_TwoTimes_DA_ASV)))
+
+# Filter log2fold change for DA ASVs per accession
+lfc_DA_specific <- lapply(names(Acc_Bac_TwoTimes_DA_ASV), function(name) {
+  da_asvs <- Acc_Bac_TwoTimes_DA_ASV[[name]]
+  lfc_table <- ancomWZ_Bac_Acc[[name]]$res$lfc
+  rownames(lfc_table) <- lfc_table$taxon
+  lfc_table <- lfc_table[lfc_table$taxon %in% da_asvs, "Cat_treatmentMb", drop = FALSE]
+  lfc_table$ASV <- rownames(lfc_table)
+  colnames(lfc_table)[1] <- paste0(name)
+  lfc_table
+})
+
+names(lfc_DA_specific) <- names(Acc_Bac_TwoTimes_DA_ASV)
+
+# merge all accessions together
+AllAcc_lfc <- Reduce(function(x, y) merge(x, y, by = "ASV", all = TRUE), lfc_DA_specific)
+rownames(AllAcc_lfc) <- AllAcc_lfc$ASV
+nrow(AllAcc_lfc)
+AllAcc_lfc$ASV <- NULL
+```
+
+#### Prepare taxonomy column class and phylum
+```{r}
+# Put all unique DA ASVs in one vector
+Acc_Bac_TwoTimes_DA_ASV <- unique(unlist(Acc_Bac_TwoTimes_DA_ASV, use.names = FALSE))
+
+# Only keep DA in ps object
+CP_unnormalized_bac_ps_ForDA <- prune_taxa(Acc_Bac_TwoTimes_DA_ASV, CP_unnormalized_bac_ps_ForDA)
+
+# Phyloseq object to data frame with relative abundance, meta data and taxonomy. Each row is a ASV-sample combination
+df <- psmelt(CP_unnormalized_bac_ps_ForDA)
+head(df[, c(1:9, 95:101)], 12)
+
+# Extract unique ASV–Class-Phylum mapping
+tax <- df[!duplicated(df$OTU), c("OTU", "Genus", "Family", "Order", "Class", "Phylum")]
+
+# Keep only those genera present in your heat map matrix
+tax <- tax[match(rownames(AllAcc_lfc), tax$OTU), ]
+
+# Row names must match heat map rows
+rownames(tax) <- tax$OTU
+tax$OTU <- NULL
+head(tax)
+
+# Add genus to matrix
+AllAcc_lfc2 <- AllAcc_lfc
+AllAcc_lfc2$ASV <- rownames(AllAcc_lfc2)
+tax$ASV <- rownames(tax)
+AllAcc_lfc2 <- merge(tax, AllAcc_lfc2, ID = "ASV")
+
+taxon <- AllAcc_lfc2$Genus
+taxon[is.na(taxon)] <- AllAcc_lfc2$Genus[is.na(taxon)]
+
+taxon[taxon == "g__Incertae_Sedis"] <- AllAcc_lfc2$Family[taxon == "g__Incertae_Sedis"]
+taxon[taxon == "f__Incertae_Sedis"] <- AllAcc_lfc2$Order[taxon == "f__Incertae_Sedis"]
+taxon[taxon == "o__Incertae_Sedis"] <- AllAcc_lfc2$Class[taxon == "o__Incertae_Sedis"]
+taxon[taxon == "c__Incertae_Sedis"] <- AllAcc_lfc2$Phylum[taxon == "c__Incertae_Sedis"]
+
+taxon[taxon == "g__Unclassified"] <- AllAcc_lfc2$Family[taxon == "g__Unclassified"]
+taxon[taxon == "f__Unclassified"] <- AllAcc_lfc2$Order[taxon == "f__Unclassified"]
+taxon[taxon == "o__Unclassified"] <- AllAcc_lfc2$Class[taxon == "o__Unclassified"]
+taxon[taxon == "c__Unclassified"] <- AllAcc_lfc2$Phylum[taxon == "c__Unclassified"]
+
+rownames(AllAcc_lfc2) <- paste(AllAcc_lfc2$ASV, taxon, sep = "_")
+#AllAcc_lfc2$taxon <- make.unique(paste(taxon, sep = "_"))
+
+AllAcc_lfc2$Phylum <- sub("p__", "", AllAcc_lfc2$Phylum)
+AllAcc_lfc2$Class <- sub("c__", "", AllAcc_lfc2$Class)
+
+tax2 <- AllAcc_lfc2[1:6]
+AllAcc_lfc2 <- AllAcc_lfc2[7:18]
+head(AllAcc_lfc2)
+
+# Make color pallet for class
+colors15 <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7",
+              "#882255", "#44AA99", "#117733", "#332288", "#AA4499", "#DDCC77") # "#000000", "#999999", 
+
+classes <- unique(tax$Class)
+class_colors <- setNames(colors15[1:length(classes)], classes)
+class_colors <- list(Class = class_colors)
+
+classes2 <- unique(tax2$Class)
+class_colors2 <- setNames(colors15[1:length(classes2)], classes2)
+class_colors2 <- list(Class = class_colors2)
+
+phylums <- unique(tax$Phylum)
+phylums_colors <- setNames(colors15[1:length(phylums)], phylums)
+phylums_colors <- list(Phylum = phylums_colors)
+
+# Make color pallet for Phylum for genus in plot
+phylums2 <- unique(tax2$Phylum)
+phylums_colors2 <- setNames(colors15[1:length(phylums2)], phylums2)
+phylums_colors2 <- list(Phylum = phylums_colors2)
+
+phylum_class_colors <- c(phylums_colors2, class_colors2)
+
+# counting number of ASVs per accession
+ASV_numb <- colSums(!is.na(AllAcc_lfc))
+ASV_numb
+
+# Row labels of genus in italic 
+rn <- rownames(AllAcc_lfc2)
+
+## Create expression labels
+row_labels <- sapply(rn, function(x) {
+  tax_part <- sub("^[^_]+_[^_]+_", "", x) # Extract taxonomy
+  if (grepl("^g__", tax_part)) { # grab all names with genus
+    prefix <- sub("(.*g__).*", "\\1", x) # keep part that does not need to be in italic
+    genus <- sub("^g__", "", tax_part) # extract genus
+    bquote(.(prefix) * italic(.(genus))) # combine genus and part not in italic
+  } else {
+    x # change nothing for higher taxonomic levels
+}})
+
+## Convert to expression vector
+row_labels <- as.expression(row_labels)
+
+# Turn data frame into a matrix
+AllAcc_lfc <- as.matrix(AllAcc_lfc)
+AllAcc_lfc2 <- as.matrix(AllAcc_lfc2)
+
+# replace NAs by 0s for clustering
+AllAcc_lfc_clu <- AllAcc_lfc
+AllAcc_lfc2_clu <- AllAcc_lfc2
+AllAcc_lfc_clu[is.na(AllAcc_lfc_clu)] <- 0
+AllAcc_lfc2_clu[is.na(AllAcc_lfc2_clu)] <- 0
+
+# breaks in heatmap
+max_abs <- max(abs(AllAcc_lfc), na.rm = TRUE)
+breaks <- unique(c(seq(-max_abs, -0.3, length.out = 10), 
+                   seq(-0.3, 0.3, length.out = 30), # More breaks in this range for sensitivity
+                   seq(0.3, max_abs, length.out = 10)))
+```
+
+#### Heatmap 
+```{r, fig.height=8, fig.width=7}
+pheatmap(AllAcc_lfc,
+          clustering_distance_rows = dist(AllAcc_lfc_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc_clu)),
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          fontsize_row = 7,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax["Phylum"],
+          annotation_colors = phylums_colors)
+```
+```{r, fig.height=8, fig.width=8}
+pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          fontsize_row = 7,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax2["Phylum"],
+          annotation_colors = phylums_colors2,
+          labels_row = row_labels)
+```
+```{r, fig.height=8, fig.width=8}
+p <- pheatmap(AllAcc_lfc2,
+          clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          fontsize_row = 9,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax2["Class"],
+          annotation_colors = class_colors2,
+          labels_row = row_labels)
+p 
+
+files <- c("CP_DAHeatmap_ASV.svg", "CP_DAHeatmap_ASV.png")
+
+mapply(function(x){
+  file_path <- file.path("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs", x)
+
+  if (grepl("svg$", x)) {
+    svg(file_path, width = 22/2.54, height = 18/2.54)
+  } else {
+    png(file_path, width = 22, height = 18, units = "cm", res = 300)
+  }
+  grid::grid.draw(p$gtable)
+  dev.off()
+}, files)
+```
+```{r, fig.height=8, fig.width=8.5}
+pheatmap(AllAcc_lfc2,
+         clustering_distance_rows = dist(AllAcc_lfc2_clu),
+          clustering_distance_cols = dist(t(AllAcc_lfc2_clu)),
+          color = colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks) - 1),
+          breaks = breaks,
+          fontsize_row = 9,
+          fontsize_col = 14,
+          na_col = "grey90",
+          angle_col = 90, 
+          annotation_row = tax2[5:6],
+          annotation_colors = phylum_class_colors,
+          labels_row = row_labels)
+```
+```{r}
+# Clean environment
+rm(list = ls())
+```
+
