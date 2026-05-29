@@ -1,0 +1,648 @@
+---
+title: "FP_03_alpha diversity"
+author: "Kris de Kreek"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# 3.0 Basic alpha diversity analysis for pilot data
+Alpha diversity will show you the quantifiable diversity within a sample - this way you compare which treatment is more or less diverse or species-rich than the other. Like in all the other steps we are evaluating here, there are countless variations and methods you could use. This is just a convenient template for you to get started.
+
+Alpha diversity requires counts from samples with equal samples sizes. This means we cannot use the CSS transformation from the metagenomeseq package. Also, heavy filtering of your data may skew some of the diversity metrics (due to the lack of rare species), so we should not over-filter the data before calculating alpha diversity.
+
+As my data is not too diverse in reed size, I use CSS transformed data.
+
+
+### Packages
+```{r, warning = FALSE, message=FALSE}
+R.version$version.string # prints R version
+
+library(tibble) #needed for function rownames_to_columns
+packageVersion("tibble")
+library(car)
+packageVersion("car")
+library(phyloseq)
+packageVersion("phyloseq")
+library(ggplot2)
+packageVersion("ggplot2")
+library(ggh4x) #for coloring strip facet wrap
+packageVersion("ggh4x")
+library(plyr) #for summary table
+packageVersion("plyr")
+
+library(emmeans) #for post hoc emmeans
+packageVersion("emmeans")
+library(multcomp) #for cld function at post hoc analysis
+packageVersion("multcomp")
+library(multcompView) #for cld function at post hoc analysis
+packageVersion("multcompView")
+library(glmmTMB) #for doing glm with many different options
+packageVersion("glmmTMB")
+library(DHARMa) #for model assumptions
+packageVersion("DHARMa")
+```
+
+
+# 3.1 Only batch 2
+### Import pre-made functions
+```{r, warning = FALSE, message = FALSE}
+source("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/RScripts/Functions/Testing_model_assumptions.R") #Functions for model assumptions
+```
+
+### Import data
+```{r}
+load("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Phyloseq_objects/FP_median_bac_ps.RData")
+```
+
+
+# 3.1.1 Alpha diversity testing Accessions
+Here we check both observed diversity and Shannon diversity indexes.
+
+## Remove unplanted CTRL
+```{r}
+FP_median_bac_ps <- subset_samples(FP_median_bac_ps, Accession != "Un")
+```
+
+## Remove Cat treatment Co
+```{r}
+FP_median_bac_ps <- subset_samples(FP_median_bac_ps, Cat_treatment != "Co")
+```
+
+## Remove RI
+```{r}
+FP_median_bac_ps <- subset_samples(FP_median_bac_ps, Accession != "RI")
+```
+
+## Remove Batch 1
+```{r}
+FP_median_bac_ps <- subset_samples(FP_median_bac_ps, Batch != 1)
+table(FP_median_bac_ps@sam_data$Batch, FP_median_bac_ps@sam_data$Accession)
+```
+
+## Calculate richness
+[Different types of alpha diversity](https://www.cd-genomics.com/microbioseq/the-use-and-types-of-alpha-diversity-metrics-in-microbial-ngs.html). 
+[Nice explanation of alpha diversity](https://docs.onecodex.com/en/articles/4136553-alpha-diversity). 
+[Concider looking at phylogenitic diversity](https://danielpfaith.wordpress.com/phylogenetic-diversity/) with this [R package](https://search.r-project.org/CRAN/refmans/abdiv/html/faith_pd.html).  
+
+```{r}
+# extract row names to remove x in row name
+total_diversity <- estimate_richness(FP_median_bac_ps) %>%
+  rownames_to_column(var = "Sample")
+
+# remove x
+total_diversity$Sample <- sub("X", "", total_diversity$Sample) 
+
+# For some reason, the "-" are replaced by ".", here we replace "." by "-" to get the original name.
+total_diversity$Sample <- gsub("\\.", "-", total_diversity$Sample) 
+
+# put new names back as row name
+total_diversity <- column_to_rownames(total_diversity, var = "Sample") 
+```
+
+## Add diversity metrics to mapping file of phyloseq objects
+We do this so we can perform Anovas, access meta data, make nicer plots, etc.
+```{r}
+# makes the diversity calculations sample_data for phyloseq object
+merg_to_ps <- sample_data(total_diversity)
+
+# merge the new phyloseq object with the old phyloseq object
+sample_data(FP_median_bac_ps) <- merge_phyloseq(FP_median_bac_ps, merg_to_ps) 
+
+# forces sample data of updated phyloseq object into a data frame
+total_diversity <- as(sample_data(FP_median_bac_ps),"data.frame")
+```
+
+## define factors
+```{r}
+total_diversity$Accession <- factor(total_diversity$Accession, levels = c("VL", "CD", "HM", "GO1"))
+total_diversity$Soil_conditioning <- factor(total_diversity$Soil_conditioning, levels = c("Mb", "Co"))
+total_diversity$Domestication <- factor(total_diversity$Domestication, levels = c("Wild", "Cultivated"))
+#total_diversity$Block_g <- as.factor(total_diversity$Block_g)
+```
+
+## Sumamry tables
+### Observed
+```{r}
+ddply(total_diversity, c("Accession", "Soil_conditioning"), summarise,
+      N = sum(!is.na(Observed)), #number of samples
+      Mis = sum(is.na(Observed)), #number of missing values
+      Mean = round(mean(Observed, na.rm=T),3), #mean
+      Median = round(median(Observed, na.rm=T),3), #median
+      SD = round(sd(Observed, na.rm=T),3), #standard deviation
+      SE = round(sd(Observed, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(total_diversity, c("Accession"), summarise,
+      N = sum(!is.na(Observed)), #number of samples
+      Mis = sum(is.na(Observed)), #number of missing values
+      Mean = round(mean(Observed, na.rm=T),3), #mean
+      Median = round(median(Observed, na.rm=T),3), #median
+      SD = round(sd(Observed, na.rm=T),3), #standard deviation
+      SE = round(sd(Observed, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(total_diversity, c("Soil_conditioning"), summarise,
+      N = sum(!is.na(Observed)), #number of samples
+      Mis = sum(is.na(Observed)), #number of missing values
+      Mean = round(mean(Observed, na.rm=T),3), #mean
+      Median = round(median(Observed, na.rm=T),3), #median
+      SD = round(sd(Observed, na.rm=T),3), #standard deviation
+      SE = round(sd(Observed, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+```
+
+### Shannon
+```{r}
+ddply(total_diversity, c("Accession", "Soil_conditioning"), summarise,
+      N = sum(!is.na(Shannon)), #number of samples
+      Mis = sum(is.na(Shannon)), #number of missing values
+      Mean = round(mean(Shannon, na.rm=T),3), #mean
+      Median = round(median(Shannon, na.rm=T),3), #median
+      SD = round(sd(Shannon, na.rm=T),3), #standard deviation
+      SE = round(sd(Shannon, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(total_diversity, c("Accession"), summarise,
+      N = sum(!is.na(Shannon)), #number of samples
+      Mis = sum(is.na(Shannon)), #number of missing values
+      Mean = round(mean(Shannon, na.rm=T),3), #mean
+      Median = round(median(Shannon, na.rm=T),3), #median
+      SD = round(sd(Shannon, na.rm=T),3), #standard deviation
+      SE = round(sd(Shannon, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(total_diversity, c("Soil_conditioning"), summarise,
+      N = sum(!is.na(Shannon)), #number of samples
+      Mis = sum(is.na(Shannon)), #number of missing values
+      Mean = round(mean(Shannon, na.rm=T),3), #mean
+      Median = round(median(Shannon, na.rm=T),3), #median
+      SD = round(sd(Shannon, na.rm=T),3), #standard deviation
+      SE = round(sd(Shannon, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+```
+
+
+## Statistics Observed index
+### Defining model
+```{r}
+lm1 <- glmmTMB(data = total_diversity, formula = Observed ~ Soil_conditioning * Accession + (1 | Block_g), family = gaussian(link = "identity"))
+lm2 <- glmmTMB(data = total_diversity, formula = Observed ~ Soil_conditioning * Accession, family = gaussian(link = "identity"))
+
+lm3 <- glmmTMB(data = total_diversity, formula = log(Observed) ~ Soil_conditioning * Accession + (1 | Block_g), family = gaussian(link = "identity"))
+lm4 <- glmmTMB(data = total_diversity, formula = log(Observed) ~ Soil_conditioning * Accession, family = gaussian(link = "identity"))
+
+lm5 <- glmmTMB(data = total_diversity, formula = sqrt(Observed) ~ Soil_conditioning * Accession + (1 | Block_g), family = gaussian(link = "identity"))
+lm6 <- glmmTMB(data = total_diversity, formula = sqrt(Observed) ~ Soil_conditioning * Accession, family = gaussian(link = "identity"))
+
+glm1 <- glmmTMB(data = total_diversity, formula = Observed ~ Soil_conditioning * Accession + (1 | Block_g), family = Gamma(link = "log"))
+glm2 <- glmmTMB(data = total_diversity, formula = Observed ~ Soil_conditioning * Accession, family = Gamma(link = "log"))
+
+glm3 <- glmmTMB(data = total_diversity, formula = log(Observed + 1) ~ Soil_conditioning * Accession + (1 | Block_g), family = Gamma(link = "log"))
+glm4 <- glmmTMB(data = total_diversity, formula = log(Observed + 1) ~ Soil_conditioning * Accession, family = Gamma(link = "log"))
+
+glm5 <- glmmTMB(data = total_diversity, formula = sqrt(Observed) ~ Soil_conditioning * Accession + (1 | Block_g), family = Gamma(link = "log"))
+glm6 <- glmmTMB(data = total_diversity, formula = sqrt(Observed) ~ Soil_conditioning * Accession, family = Gamma(link = "log"))
+```
+
+### Model assumptions
+```{r, fig.width=10, fig.height=7}
+DHARMa.sum(Model = lm1)
+DHARMa.sum(Model = lm2)
+DHARMa.sum(Model = lm3)
+DHARMa.sum(Model = lm4)
+DHARMa.sum(Model = lm5)
+DHARMa.sum(Model = lm6)
+
+DHARMa.sum(Model = glm1)
+DHARMa.sum(Model = glm2)
+DHARMa.sum(Model = glm3)
+DHARMa.sum(Model = glm4)
+DHARMa.sum(Model = glm5)
+DHARMa.sum(Model = glm6)
+```
+
+### Model output
+```{r}
+# #summary(lm1)
+# summary(lm2)
+# #Anova(lm1)
+# Anova(lm2)
+
+# summary(lm3)
+# summary(lm4)
+# Anova(lm3)
+# Anova(lm4)
+
+summary(lm5)
+# summary(lm6)
+Anova(lm5)
+# Anova(lm6)
+
+Alphadiv_obs_Acc_FP <- as.data.frame(Anova(lm5))
+write.csv(Alphadiv_obs_Acc_FP, "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Statistical_output/FP/Alphadiv_obs_Acc_FP.csv")
+
+# summary(glm1)
+# summary(glm2)
+# Anova(glm1)
+# Anova(glm2)
+# 
+# #summary(glm3)
+# summary(glm4)
+# #Anova(glm3)
+# Anova(glm4)
+# 
+# summary(glm5)
+# summary(glm6)
+# Anova(glm5)
+# Anova(glm6)
+```
+
+### Post hoc test
+```{r}
+# emmeans(lm2, pairwise ~ Accession)
+# ph_obs <- cld(emmeans(lm2, pairwise ~ Accession), Letters = letters)
+# print(ph_obs)
+```
+
+```{r}
+rm(lm1, lm2, lm3, lm4, lm5, lm6, glm1, glm2, glm3, glm4, glm5, glm6)
+```
+
+## Statistics Shannon index
+### Defining model
+```{r}
+lm1 <- glmmTMB(data = total_diversity, formula = Shannon ~ Soil_conditioning * Accession + (1 | Block_g), family = gaussian(link = "identity"))
+lm2 <- glmmTMB(data = total_diversity, formula = Shannon ~ Soil_conditioning * Accession, family = gaussian(link = "identity"))
+
+lm3 <- glmmTMB(data = total_diversity, formula = log(Shannon) ~ Soil_conditioning * Accession + (1 | Block_g), family = gaussian(link = "identity"))
+lm4 <- glmmTMB(data = total_diversity, formula = log(Shannon) ~ Soil_conditioning * Accession, family = gaussian(link = "identity"))
+
+lm5 <- glmmTMB(data = total_diversity, formula = sqrt(Shannon) ~ Soil_conditioning * Accession + (1 | Block_g), family = gaussian(link = "identity"))
+lm6 <- glmmTMB(data = total_diversity, formula = sqrt(Shannon) ~ Soil_conditioning * Accession, family = gaussian(link = "identity"))
+
+glm1 <- glmmTMB(data = total_diversity, formula = Shannon ~ Soil_conditioning * Accession + (1 | Block_g), family = Gamma(link = "log"))
+glm2 <- glmmTMB(data = total_diversity, formula = Shannon + 2 ~ Soil_conditioning * Accession, family = Gamma(link = "log"))
+
+glm3 <- glmmTMB(data = total_diversity, formula = log(Shannon + 2) ~ Soil_conditioning * Accession + (1 | Block_g), family = Gamma(link = "log"))
+glm4 <- glmmTMB(data = total_diversity, formula = log(Shannon) ~ Soil_conditioning * Accession, family = Gamma(link = "log"))
+
+glm5 <- glmmTMB(data = total_diversity, formula = sqrt(Shannon) ~ Soil_conditioning * Accession + (1 | Block_g), family = Gamma(link = "log"))
+glm6 <- glmmTMB(data = total_diversity, formula = sqrt(Shannon) ~ Soil_conditioning * Accession, family = Gamma(link = "log"))
+```
+
+### Model assumptions
+```{r, fig.width=10, fig.height=7}
+DHARMa.sum(Model = lm1)
+DHARMa.sum(Model = lm2)
+DHARMa.sum(Model = lm3)
+DHARMa.sum(Model = lm4)
+DHARMa.sum(Model = lm5)
+DHARMa.sum(Model = lm6)
+
+DHARMa.sum(Model = glm1)
+DHARMa.sum(Model = glm2)
+DHARMa.sum(Model = glm3)
+DHARMa.sum(Model = glm4)
+DHARMa.sum(Model = glm5)
+DHARMa.sum(Model = glm6)
+```
+
+### Model output
+```{r}
+# summary(lm1)
+# summary(lm2)
+# Anova(lm1)
+# Anova(lm2)
+# 
+# summary(lm3)
+# summary(lm4)
+# Anova(lm3)
+# Anova(lm4)
+
+# summary(lm5)
+# summary(lm6)
+# Anova(lm5)
+# Anova(lm6)
+
+# summary(glm1)
+# summary(glm2
+# Anova(glm1)
+# Anova(glm2)
+# 
+# #summary(glm3)
+# summary(glm4)
+# #Anova(glm3)
+# Anova(glm4)
+# 
+summary(glm5)
+# summary(glm6)
+Anova(glm5)
+# Anova(glm6)
+
+Alphadiv_Shan_Acc_FP <- as.data.frame(Anova(glm5))
+write.csv(Alphadiv_Shan_Acc_FP, "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/GitHub/TwelveAccessionExperiment/MicrobiomeAnalysis/Data/Statistical_output/FP/Alphadiv_Shan_Acc_FP.csv")
+```
+
+### Post hoc test
+```{r}
+emmeans(glm5, pairwise ~ Soil_conditioning | Accession)
+ph_sh <- cld(emmeans(glm5, pairwise ~ Soil_conditioning | Accession), Letters = letters)
+print(ph_sh)
+      
+emmeans(glm5, pairwise ~ Soil_conditioning * Accession)
+ph_sh2 <- cld(emmeans(glm5, pairwise ~ Soil_conditioning * Accession), Letters = letters)
+print(ph_sh2)
+```
+```{r}
+#rm(lm1, lm2, lm3, lm4, lm5, lm6, glm1, glm2, glm3, glm4, glm5, glm6)
+```
+
+### Kruskal-Wallis test
+```{r}
+kruskal.test(data = total_diversity, Shannon ~ Accession)
+pairwise.wilcox.test(total_diversity$Shannon, total_diversity$Accession, p.adjust.method = "fdr")
+
+kruskal.test(data = total_diversity, Shannon ~ Soil_conditioning)
+```
+
+### Extracting ratios on log scale gamma distribution
+```{r}
+# Define function to extract ratios on log scale
+EMM_mod <- emmeans(glm1, pairwise ~ Soil_conditioning | Accession, adjust = "tukey", type = "link")
+EMM_mod_df <- as.data.frame(summary(EMM_mod$contrasts, infer = TRUE))
+
+# Define factors
+EMM_mod_df$Accession <- factor(EMM_mod_df$Accession, levels = c("VL", "CD", "HM", "GO1"))
+EMM_mod_df
+```
+
+# 3.1.2 Box plot diversity indexes Accession
+### Data preperation Observed index
+```{r, fig.width=10, fig.height=4}
+# Alter color facet wrap label
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#0072B2", 1), rep("#D55E00", 3))),
+                        text_x = elem_list_text(colour = c(rep("white", 1), rep("black", 3))))
+
+# Statistical information
+Stats <- paste0("LM: Accession: p = ", 0.482, "; Soil: p = ", 0.107, ";\nInteraction: p = ", 0.345)
+
+# Turn around factor levels
+total_diversity$Soil_conditioning <- factor(total_diversity$Soil_conditioning, levels = c("Co", "Mb"))
+```
+
+### Boxplot Observed index
+```{r, fig.width=4, fig.height=3.5}
+ggplot(data = total_diversity,
+       mapping = aes(y = Observed, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Observed, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Accession, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  # geom_segment(aes(x = 0.8, y = 2180, xend = 2.2, yend = 2180)) +
+  # geom_text(data = DataSum,
+  #           aes(label = Label, y = 2230, x = 1.5), # fill out the significant letters
+  #           size = 4,
+  #           hjust = 0.5,
+  #           #position = position_dodge(0.5)
+  #          ) +
+  ggtitle(Stats) +
+  # scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+  #                    #breaks = seq(0, 1, 0.25), #steps on the y-axis
+  #                    limits = c(0, max(total_diversity$Observed)*1.05)) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Observed richness") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 4.05,
+         height = 3.9,
+         units = "cm",
+         dpi = 300),
+  x = c("FP_AlphaDiv_obs_acc.svg", "FP_AlphaDiv_obs_acc.png"))
+```
+
+### Data preperation Shannon diversity post hoc per accession
+```{r, fig.width=4, fig.height=3.5}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#0072B2", 1), rep("#D55E00", 3))),
+                       text_x = elem_list_text(colour = c(rep("white", 1), rep("black", 3))))
+
+# Add statistical info
+ph_sh$Lab <- gsub(pattern = " ", replacement = "", x = ph_sh$.group)
+ph_sh$Accession <- factor(ph_sh$Accession, levels = c("VL", "CD", "HM", "GO1"))
+ph_sh <- ph_sh[order(ph_sh$Accession), ]
+
+Stats_sh <- paste0("GLMM: Accession: p < ", 0.001, "; Soil: p = ", 0.041, ";\nInteraction: p < ", 0.001)
+```
+
+### Boxplot Shannon diversity
+```{r, fig.width=4, fig.height=3.5}
+ggplot(data = total_diversity,
+       mapping = aes(y = Shannon, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Shannon, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Accession, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  #geom_segment(aes(x = 0.8, y = 6.7, xend = 2.2, yend = 6.7)) +
+  geom_text(data = ph_sh,
+            aes(label = Lab, y = 6.75, x = 1.5), # fill out the significant letters
+            size = 4,
+            #hjust = 0.5,
+            position = position_dodge(2)) +
+  ggtitle(Stats_sh) +
+  # scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+  #                    #breaks = seq(0, 1, 0.25), #steps on the y-axis
+  #                    limits = c(0, max(total_diversity$Shannon*1.1))) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Shannon diversity") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+```
+
+### Data preperation Shannon diversity post hoc per all accessions together
+```{r, fig.width=10, fig.height=3.5}
+# Add statistical info
+ph_sh2$Lab <- gsub(pattern = " ", replacement = "", x = ph_sh2$.group)
+ph_sh2$Accession <- factor(ph_sh2$Accession, levels = c("VL", "CD", "HM", "GO1"))
+ph_sh2 <- ph_sh2[order(ph_sh2$Accession), ]
+```
+
+### Boxplot Shannon diversity
+```{r, fig.width=4, fig.height=3.5}
+ggplot(data = total_diversity,
+       mapping = aes(y = Shannon, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Shannon, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Accession, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  #geom_segment(aes(x = 0.8, y = 6.8, xend = 2.2, yend = 6.8)) +
+  geom_text(data = ph_sh2,
+            aes(label = Lab, y = 6.75, x = 1.5), # fill out the significant letters
+            size = 4,
+            #hjust = 0.5,
+            position = position_dodge(2)) +
+  ggtitle(Stats_sh) +
+  # scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+  #                    #breaks = seq(0, 1, 0.25), #steps on the y-axis
+  #                    limits = c(0, max(total_diversity$Shannon*1.1))) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Shannon diversity") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+          width = 4.05,
+         height = 3.9,
+         units = "cm",
+         dpi = 300),
+  x = c("FP_AlphaDiv_shan_acc.svg", "FP_AlphaDiv_shan_acc.png"))
+```
+
+### Figure PSF effect
+```{r}
+stats_PSF <- data.frame(Stats = c("*", "", "*", ""),
+                        Accession = c("VL", "CD", "HM", "GO1"))  
+```
+
+```{r, fig.width=5, fig.height=3}
+ggplot(data = EMM_mod_df,
+       mapping = aes(y = estimate, x = Accession)) + #Defines the data
+  geom_hline(yintercept = 0, 
+             colour = "gray30") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), 
+                color = c(rep("#0072B2", 1), rep("#D55E00", 3)),
+                linewidth = 1,
+                width = 0.3) +
+  geom_point(aes(y = estimate, x = Accession),
+             size = 2) +
+  geom_text(data = stats_PSF,
+            aes(label = Stats, y = 0.065, x = Accession), # fill out the significant letters
+            size = 8,
+            #hjust = 0.5,
+            #position = position_dodge(2)
+            ) +
+  scale_y_continuous(breaks = seq(-0.03, 0.06, 0.03),
+                     limits = c(-0.05, 0.07)) + #steps on the y-axis
+  ggtitle(Stats_sh) +
+  ylab("PSF ratio") +    #y-label with Mb in italic
+  xlab("Accession") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3,
+         height = 3,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_PSF_ratio_shan_Acc.svg", "PF_PSF_ratio_Shan_Acc.png"))
+```

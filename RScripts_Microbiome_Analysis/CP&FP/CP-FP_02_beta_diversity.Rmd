@@ -1,5 +1,5 @@
 ---
-title: "CP&FP_02_beta_diversity - RI and Batch 1 FP removed - Unplanted CTRL removed"
+title: "CP&FP_02_beta_diversity"
 author: "Kris de Kreek"
 date: "`r Sys.Date()`"
 output: 
