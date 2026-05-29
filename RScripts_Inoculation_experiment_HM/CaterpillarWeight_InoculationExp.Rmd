@@ -1,0 +1,816 @@
+---
+title: "Caterpillar Weight Inoculation experiment HM"
+author: "Kris"
+date: "2026-05-21"
+output: 
+  html_document: 
+      toc: true
+---
+
+# Start
+## Import pre-made functions
+```{r, warning = FALSE, message = FALSE}
+source("C:/Users/kreek001/OneDrive - Wageningen University & Research/R_Scripts/DHARMa_functions.R") #Functions for comparing distributions, models and model assumptions
+```
+    
+## Libraries
+```{r, warning = FALSE, message = FALSE}
+R.version$version.string # prints R version
+
+library(car) #for Anova function
+packageVersion("car")
+library(emmeans) #for post hoc emmeans
+packageVersion("emmeans")
+library(multcomp) #for cld function at post hoc analysis
+packageVersion("multcomp")
+library(multcompView) #for cld function at post hoc analysis
+packageVersion("multcompView")
+library(ggplot2) #graphs
+packageVersion("ggplot2")
+library(plyr) #for summary table
+packageVersion("plyr")
+library(glmmTMB) #for doing glm with many different options
+packageVersion("glmmTMB")
+
+library(dplyr) # for area underneath curve
+packageVersion("dplyr")
+library(pracma)  # for trapz for area underneath curve
+packageVersion("pracma")
+```
+
+## Load and process data
+#### Load data set
+```{r}
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Inoculation experiment/Data/Caterpillar_weight_inoculationExpHM2.csv")
+```
+
+### Remove NAs
+```{r}
+data <- data[complete.cases(data[ , "Weight"]),]
+```
+
+### Define factors
+```{r}
+#data$Time <- as.factor(data$Time) #defined after plots
+data$Treatment <- factor(data$Treatment, levels = c("Strain 1", "Strain 2", "Strain 3", "WCS417", "Heat-killed", "CTRL"))
+```
+
+# Explore data
+## Check data
+```{r}
+str(data)
+head(data, 12)
+summary(data) #check for outliers
+```
+
+### Summary table
+```{r}
+dataSum <- ddply(data, c("Treatment", "Time"), summarize,
+            N = sum(!is.na(Weight)), #number of samples
+            Mis = sum(is.na(Weight)), #number of missing values
+            Mean = round(mean(Weight, na.rm=T),3), #mean
+            Median = round(median(Weight, na.rm=T),3), #median
+            SD = round(sd(Weight, na.rm=T),3), #standard deviation
+            SE = round(sd(Weight, na.rm=T) / sqrt(N),5), #standard error
+            LCI = round(Mean - (2*SE),3), #lower confidence interval
+            HCI = round(Mean + (2*SE),3)) # upper confidence interval
+dataSum
+```
+
+## Plot data 
+### Plot non transformed data
+Check what the best line is. Now just used the standard option (loess with y ~ x).
+```{r fig.width=10, fig.height=7}
+Stats <- "LMM: Time: p < 0.001; Inoculation: p = 0.304; Interaction: p = 0.017"
+lab <-  c(expression("Isolate 1 (" * italic("Pedococcus-Phycicoccus") * ")"),
+          expression("Isolate 2 (" * italic("Agrobacterium") * ", Rhizobiaceae)"), 
+          "Isolate 3 (Rhizobiaceae)", 
+          expression(italic("Pseudomonas simiae") ~ "WCS417"), 
+          "Heat-killed control", 
+          "Control")
+
+p <- ggplot(data = data, aes(x = Time, y = Weight, color = Treatment, shape = Treatment)) +
+  geom_point(data = data,
+             aes(x = Time, y = Weight, color = Treatment, shape = Treatment),
+             inherit.aes = FALSE,
+             alpha = 0.3,
+             size = 1) +
+  geom_smooth(data = dataSum,
+              aes(x = Time, y = Mean, color = Treatment),
+              method = "nls",
+              formula = y ~ Asym / (1 + exp((xmid - x) / scal)),
+              method.args = list(start = list(Asym = 1200, xmid = 18, scal = 3.5),
+                                 control = nls.control(maxiter = 200)),
+              se = FALSE,
+              linewidth = 0.7) +
+  geom_errorbar(data = dataSum,
+                inherit.aes = FALSE,
+                aes(x = Time, y = Mean, color = Treatment, shape = Treatment,
+                    ymin = Mean - SE,
+                    ymax = Mean + SE),
+                width = 0.4,
+                linewidth = 0.7) +
+  scale_x_continuous(expand = c(0, 0), 
+                     breaks = c(0,3,6,9,12,15,18),
+                     limits = c(0, 19)) +   # x limits
+  scale_y_continuous(expand = c(0, 0),    #start graph at y = min and x = min
+                     limits = c(0, 1000)) +   # x limits
+  scale_shape_manual(name = "Inoculation treatment",
+                     values = c(0:5),
+                     labels = lab) + # change label in legend part shape
+  scale_color_manual(name = "Inoculation treatment",
+                     values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288"), # customize colours
+                     labels = lab) +
+  ylab("Caterpillar weight (mg)") +
+  xlab("Time (days)") +
+  ggtitle(Stats) +
+  guides(color = guide_legend(override.aes = list(size = 2.5, linewidth = 1))) + # increase size of dots and width of the lines in legend
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(),     #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        #strip.text = element_text(size = 13),
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 11),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = c(0.4, 0.7),
+        legend.background = element_rect(fill = "transparent", color = NA),
+        legend.key = element_rect(fill = "transparent", color = NA))
+```
+```{r fig.width=10, fig.height=7}
+print(p)
+```
+```{r fig.width=6, fig.height=4, warning=FALSE}
+print(p)
+```
+```{r fig.width=5, fig.height=4, warning=FALSE}
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 6,
+         height = 5,
+         units = "cm",
+         dpi = 300),
+  x = c("FP_InoculationExpHM_growthCurve.svg", "FP_InoculationExpHM_growthCurve.png"))
+```
+
+### Plot with errorbars
+```{r}
+q <- ggplot(data = dataSum, aes(x = Time, y = Mean, color = Treatment, shape = Treatment)) +
+  geom_smooth(data = dataSum,
+              aes(x = Time, y = Mean, color = Treatment),
+              method = "nls",
+              formula = y ~ Asym / (1 + exp((xmid - x) / scal)),
+              method.args = list(start = list(Asym = 1200, xmid = 18, scal = 3.5),
+                                 control = nls.control(maxiter = 200)),
+              se = FALSE,
+              linewidth = 0.7) +
+  geom_errorbar(data = dataSum,
+                aes(ymin = Mean - SE,
+                    ymax = Mean + SE),
+                width = 0.4,
+                linewidth = 0.7) +
+  scale_x_continuous(expand = c(0, 0), 
+                     breaks = c(0,3,6,9,12,15,18),
+                     limits = c(0, 19)) +   # x limits
+  scale_y_continuous(expand = c(0, 0),    #start graph at y = min and x = min
+                     limits = c(0, 750)) +   # x limits
+  scale_shape_manual(name = "Inoculation treatment",
+                     values = c(0:5),
+                     labels = lab) + # change label in legend part shape
+  scale_color_manual(name = "Inoculation treatment",
+                     values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288"), # customize colours
+                     labels = lab) +
+  ylab("Caterpillar weight (mg)") +
+  xlab("Time (days)") +
+  ggtitle(Stats) +
+  guides(color = guide_legend(override.aes = list(size = 2.5, linewidth = 1))) + # increase size of dots and width of the lines in legend
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(),     #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        #strip.text = element_text(size = 13),
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 11),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = c(0.4, 0.7),
+        legend.background = element_rect(fill = "transparent", color = NA),
+        legend.key = element_rect(fill = "transparent", color = NA))
+```
+```{r fig.width=10, fig.height=7, warning=FALSE}
+print(q)
+```
+```{r fig.width=6, fig.height=4, warning=FALSE}
+print(q)
+```
+
+```{r fig.width=5, fig.height=4, warning=FALSE}
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 6,
+         height = 5,
+         units = "cm",
+         dpi = 300),
+  x = c("FP_InoculationExpHM_growthCurve_OnlyErrorbar.svg", "FP_InoculationExpHM_growthCurve_OnlyErrorbar.png"))
+```
+
+### Plot without day 18
+```{r fig.width=10, fig.height=4}
+Stats <- "LMM: Time: p < 0.001; Inoculation: p = 0.323; Interaction: p = 0.233"
+
+fit <- lm(Mean ~ poly(Time, 2, raw = TRUE)*Treatment, data = dataSum[dataSum$Time %in% c(7, 13, 16), ])
+#fit <- lm(Mean ~ Time*Treatment, data = dataSum[dataSum$Time %in% c(7, 13, 16), ])
+newdat <- expand.grid(Time = seq(7, 16, length.out = 200),
+                     Treatment = unique(dataSum$Treatment))
+
+newdat$pred <- predict(fit, newdata = newdat)
+
+
+# install.packages("scam")
+# library(scam)
+# 
+# fit <- scam(Mean ~ Treatment + s(Time, by = Treatment, bs = "mpi"), data = dataSum[dataSum$Time %in% c(7, 13, 16), ])
+
+r <- ggplot(data = data[data$Time %in% c(7, 13, 16), ], aes(x = Time, y = Weight, color = Treatment, shape = Treatment)) +
+  geom_point(data = data[data$Time %in% c(7, 13, 16), ],
+             aes(x = Time, y = Weight, color = Treatment, shape = Treatment),
+             inherit.aes = FALSE,
+             alpha = 0.3,
+             size = 1) +
+  geom_line(data = newdat,
+          aes(x = Time, y = pred),
+          linewidth = 1) +
+  geom_errorbar(data = dataSum[dataSum$Time %in% c(7, 13, 16), ],
+                inherit.aes = FALSE,
+                aes(x = Time, y = Mean, color = Treatment, shape = Treatment,
+                    ymin = Mean - SE,
+                    ymax = Mean + SE),
+                width = 0.4,
+                linewidth = 0.7) +
+  scale_x_continuous(expand = c(0, 0), 
+                     breaks = c(0,4,8,12,16),
+                     limits = c(0, 17)) +   # x limits
+  scale_y_continuous(expand = c(0, 0),    #start graph at y = min and x = min
+                     limits = c(0, 570)) +   # x limits
+  scale_shape_manual(name = "Inoculation treatment",
+                     values = c(0:5),
+                     labels = lab) + # change label in legend part shape
+  scale_color_manual(name = "Inoculation treatment",
+                     values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288"), # customize colours
+                     labels = lab) +
+  ylab("Caterpillar weight (mg)") +
+  xlab("Time (days)") +
+  ggtitle(Stats) +
+  guides(color = guide_legend(override.aes = list(size = 2.5, linewidth = 1))) + # increase size of dots and width of the lines in legend
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(),     #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        #strip.text = element_text(size = 13),
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 11),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = c(0.4, 0.7),
+        legend.background = element_rect(fill = "transparent", color = NA),
+        legend.key = element_rect(fill = "transparent", color = NA))
+
+#Does not work: data = data, method = "lm", formula = data$Weight ~ data$Time * data$Soil_conditioning; aes(color = Soil_conditioning
+```
+```{r fig.width=10, fig.height=7}
+print(r)
+```
+```{r fig.width=6, fig.height=4, warning=FALSE}
+print(r)
+```
+```{r fig.width=5, fig.height=4, warning=FALSE}
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 6,
+         height = 5,
+         units = "cm",
+         dpi = 300),
+  x = c("FP_InoculationExpHM_growthCurve_7-16.svg", "FP_InoculationExpHM_growthCurve_7-16.png"))
+```
+
+### Plot log(Weight) data
+```{r, warning=FALSE}
+ggplot(data = data, aes(y = log(Weight), x = Time, colour = Treatment)) +
+  geom_point() +
+  geom_smooth()
+```
+```{r, warning=FALSE}
+ggplot(data = data[data$Time %in% c(7, 13, 16), ], aes(y = log(Weight), x = Time, colour = Treatment)) +
+  geom_point() +
+  geom_smooth()
+```
+
+### Boxplots per time point
+```{r, fig.width=6, fig.height=4}
+ggplot(data = data,
+       mapping = aes(y = Weight, x = Treatment, fill = Treatment)) + #Defines the data
+  stat_boxplot(aes(y = Weight, x = Treatment), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap(~ Time,
+             nrow = 1,
+             #labeller = labeller(Time = c("21" = "21 days"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.15,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 1.5,
+               color = "white",
+               shape = 18) + #Shows the mean as a white circle
+  # geom_segment(aes(x = 0.8, y = 900, xend = 2.2, yend = 900)) +
+  # geom_text(data = DataSum,
+  #           aes(label = Let, y = 400), # fill out the significant letters
+  #           size = 4,
+  #           #hjust = -2.5
+  #           ) + # labels in middle of line
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$Weight*1.2))) +   #y limits
+  scale_fill_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Caterpillar weight (mg)") +    #y-label with Mb in italic
+  xlab("Inoculation treatment") +
+  #ggtitle("\nWilcox: p = 0.002") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+```
+
+```{r, fig.width=2.2, fig.height=4}
+ggplot(data = data[data$Time == 7, ],
+       mapping = aes(y = Weight, x = Treatment, fill = Treatment)) + #Defines the data
+  stat_boxplot(aes(y = Weight, x = Treatment), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap(~ Time,
+             nrow = 1,
+             #labeller = labeller(Time = c("21" = "21 days"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.15,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 1.5,
+               color = "white",
+               shape = 18) + #Shows the mean as a white circle
+  # geom_segment(aes(x = 0.8, y = 900, xend = 2.2, yend = 900)) +
+  # geom_text(data = DataSum,
+  #           aes(label = Let, y = 400), # fill out the significant letters
+  #           size = 4,
+  #           #hjust = -2.5
+  #           ) + # labels in middle of line
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data[data$Time == 7, "Weight"]*1.2))) +   #y limits
+  scale_fill_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Caterpillar weight (mg)") +    #y-label with Mb in italic
+  xlab("Inoculation treatment") +
+  #ggtitle("\nWilcox: p = 0.002") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+```
+
+# Statistics
+## Define factors
+```{r}
+data$Time <- as.factor(data$Time)
+```
+
+## Kruskall wallis test at day 13 and 16
+```{r}
+kruskal.test(data = data[data$Time == 13, ], Weight ~ Treatment)
+kruskal.test(data = data[data$Time == 16, ], Weight ~ Treatment)
+#kruskal.test(data = data[data$Time == 18, ], Weight ~ Treatment)
+```
+   
+## Testing model at day 13 and 16
+```{r, fig.height=7}
+lm0 <- glmmTMB(data = data[data$Time == 13, ], formula = Weight ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+lm00 <- glmmTMB(data = data[data$Time == 13, ], formula = Weight ~ Treatment, family = gaussian(link = "identity"))
+
+DHARMa.sum(lm0)
+DHARMa.sum(lm00)
+
+summary(lm0)
+summary(lm00)
+Anova(lm0)
+Anova(lm00)
+
+lm1 <- glmmTMB(data = data[data$Time == 16, ], formula = Weight ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+lm2 <- glmmTMB(data = data[data$Time == 16, ], formula = Weight ~ Treatment, family = gaussian(link = "identity"))
+
+DHARMa.sum(lm1)
+DHARMa.sum(lm2)
+
+summary(lm1)
+summary(lm2)
+Anova(lm1)
+Anova(lm2)
+
+# lm3 <- glmmTMB(data = data[data$Time == 18, ], formula = Weight ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+# lm4 <- glmmTMB(data = data[data$Time == 18, ], formula = Weight ~ Treatment, family = gaussian(link = "identity"))
+# 
+# DHARMa.sum(lm3)
+# DHARMa.sum(lm4)
+# 
+# summary(lm3)
+# summary(lm4)
+# Anova(lm3)
+# Anova(lm4)
+```
+```{r}
+rm(lm1, lm2, lm3, lm4)
+```
+
+    
+## Test (G)LM all time points
+### Testing model
+ar1 only works well if time points are equally distant from each other
+```{r}
+# lm1 <- glmmTMB(data = data, formula = Weight ~ Time*Treatment + ar1(Time + 0 | nr), family = gaussian(link = "identity"))
+# lm2  <- glmmTMB(data = data, formula = Weight ~ Time*Treatment + (1 | nr), family = gaussian(link = "identity"))
+# lm3  <- glmmTMB(data = data, formula = Weight ~ Time*Treatment, family = gaussian(link = "identity"))
+
+lm4 <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment + ar1(Time + 0 | nr), family = gaussian(link = "identity"))
+lm5a  <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment + (Time | nr), family = gaussian(link = "identity"))
+lm5b  <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment + (1 | nr), family = gaussian(link = "identity"))
+lm5c  <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment + (Time | nr) + (1 | Block), family = gaussian(link = "identity"))
+lm5d  <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment + (1 | nr) + (1 | Block), family = gaussian(link = "identity"))
+lm6  <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment, family = gaussian(link = "identity"))
+
+# lm7 <- glmmTMB(data = data, formula = sqrt(Weight) ~ Time*Treatment + ar1(Time + 0 | nr), family = gaussian(link = "identity"))
+# lm8  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Time*Treatment + (1 | nr), family = gaussian(link = "identity"))
+# lm9  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Time*Treatment, family = gaussian(link = "identity"))
+# 
+# glm1 <- glmmTMB(data = data, formula = Weight ~ Time*Treatment + ar1(Time + 0 | nr), family = Gamma(link = "log"))
+# glm2  <- glmmTMB(data = data, formula = Weight ~ Time*Treatment + (1 | nr), family = Gamma(link = "log"))
+# glm3  <- glmmTMB(data = data, formula = Weight ~ Time*Treatment, family = Gamma(link = "log"))
+# 
+# glm4 <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment + ar1(Time + 0 | nr), family = Gamma(link = "log"))
+# glm5  <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment + (1 | nr), family = Gamma(link = "log"))
+# glm6  <- glmmTMB(data = data, formula = log(Weight) ~ Time*Treatment, family = Gamma(link = "log"))
+# 
+# glm7 <- glmmTMB(data = data, formula = sqrt(Weight) ~ Time*Treatment + ar1(Time + 0 | nr), family = Gamma(link = "log"))
+# glm8  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Time*Treatment + (1 | nr), family = Gamma(link = "log"))
+# glm9  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Time*Treatment, family = Gamma(link = "log"))
+```
+https://cran.r-project.org/web/packages/glmmTMB/vignettes/troubleshooting.html    
+https://cran.r-project.org/web/packages/glmmTMB/vignettes/covstruct.html     
+https://github.com/glmmTMB/glmmTMB/issues/986    
+   
+### Model assumptions: DHARMa plots
+```{r, fig.height=7}
+# DHARMa.sum(lm1)
+# DHARMa.sum(lm2)
+# DHARMa.sum(lm3)
+DHARMa.sum(lm4) #good
+DHARMa.sum(lm5a)
+DHARMa.sum(lm5b)
+DHARMa.sum(lm5c) # best model
+DHARMa.sum(lm5d)
+#DHARMa.sum(lm6)
+# DHARMa.sum(lm7)
+# DHARMa.sum(lm8)
+# DHARMa.sum(lm9)
+# 
+# DHARMa.sum(glm1) #good, but lm4 better
+# #DHARMa.sum(glm2)
+# #DHARMa.sum(glm3)
+# DHARMa.sum(glm4)
+# DHARMa.sum(glm5)
+# DHARMa.sum(glm6)
+# DHARMa.sum(glm7) # also ok
+# #DHARMa.sum(glm8)
+# #DHARMa.sum(glm9)
+```
+
+### Model output
+```{r}
+summary(lm5c)
+Anova(lm5c)
+```
+
+### Posthoc
+```{r}
+emmeans(lm5c, pairwise ~ Treatment|Time, adjust = "tukey")
+```
+
+### Test without day 18
+```{r, fig.height=7}
+lm5c  <- glmmTMB(data = data[data$Time %in% c(7, 13, 16), ], formula = log(Weight) ~ Time*Treatment + (Time | nr) + (1 | Block), family = gaussian(link = "identity"))
+
+DHARMa.sum(lm5c) # best model
+
+Anova(lm5c)
+```
+
+## Area underneath curve
+```{r}
+data$nr <- as.numeric(data$nr)
+data$Time <- as.numeric(data$Time)
+data$Treatment <- as.numeric(data$Treatment)
+
+auc_data <- data %>%
+  group_by(Treatment, Block, nr) %>%
+  arrange(Time, .by_group = TRUE) %>%
+  summarise(
+    AUC = trapz(Time, Weight),
+    .groups = "drop"
+  )
+
+auc_data$Treatment <- as.factor(auc_data$Treatment)
+```
+
+### Plot
+```{r, fig.width=4, fig.height=4}
+ggplot(data = auc_data,
+       mapping = aes(y = AUC, x = Treatment, fill = Treatment)) + #Defines the data
+  stat_boxplot(aes(y = AUC, x = Treatment), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  # facet_wrap(~ Time,
+  #            nrow = 1,
+  #            labeller = labeller(Time = c("21" = "21 days"))) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.15,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 1.5,
+               color = "white",
+               shape = 18) + #Shows the mean as a white circle
+  # geom_segment(aes(x = 0.8, y = 900, xend = 2.2, yend = 900)) +
+  # geom_text(data = DataSum,
+  #           aes(label = Let, y = 400), # fill out the significant letters
+  #           size = 4,
+  #           #hjust = -2.5
+  #           ) + # labels in middle of line
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(auc_data$AUC*1.2))) +   #y limits
+  scale_fill_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Area underneath growth curve") +    #y-label with Mb in italic
+  xlab("Inoculation treatment") +
+  #ggtitle("\nWilcox: p = 0.002") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+```
+
+### Testing model
+```{r}
+lm2  <- glmmTMB(data = auc_data, formula = AUC ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+lm3  <- glmmTMB(data = auc_data, formula = AUC ~ Treatment, family = gaussian(link = "identity"))
+
+lm5  <- glmmTMB(data = auc_data, formula = log(AUC) ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+lm6  <- glmmTMB(data = auc_data, formula = log(AUC) ~ Treatment, family = gaussian(link = "identity"))
+
+lm8  <- glmmTMB(data = auc_data, formula = sqrt(AUC) ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+lm9  <- glmmTMB(data = auc_data, formula = sqrt(AUC) ~ Treatment, family = gaussian(link = "identity"))
+
+glm2  <- glmmTMB(data = auc_data, formula = AUC ~ Treatment + (1 | Block), family = Gamma(link = "log"))
+glm3  <- glmmTMB(data = auc_data, formula = AUC ~ Treatment, family = Gamma(link = "log"))
+
+glm5  <- glmmTMB(data = auc_data, formula = log(AUC) ~ Treatment + (1 | Block), family = Gamma(link = "log"))
+glm6  <- glmmTMB(data = auc_data, formula = log(AUC) ~ Treatment, family = Gamma(link = "log"))
+
+glm8  <- glmmTMB(data = auc_data, formula = sqrt(AUC) ~ Treatment + (1 | Block), family = Gamma(link = "log"))
+glm9  <- glmmTMB(data = auc_data, formula = sqrt(AUC) ~ Treatment, family = Gamma(link = "log"))
+```
+https://cran.r-project.org/web/packages/glmmTMB/vignettes/troubleshooting.html    
+https://cran.r-project.org/web/packages/glmmTMB/vignettes/covstruct.html     
+https://github.com/glmmTMB/glmmTMB/issues/986    
+   
+### Model assumptions: DHARMa plots
+```{r, fig.height=7}
+DHARMa.sum(lm2)
+DHARMa.sum(lm3)
+DHARMa.sum(lm5)
+DHARMa.sum(lm6)
+DHARMa.sum(lm8)
+DHARMa.sum(lm9)
+
+DHARMa.sum(glm2) #Best
+DHARMa.sum(glm3)
+DHARMa.sum(glm5)
+DHARMa.sum(glm6)
+DHARMa.sum(glm8)
+DHARMa.sum(glm9)
+```
+
+### Model output
+```{r}
+summary(glm2)
+Anova(glm2)
+```
+
+```{r}
+rm(data)
+```
+
+
+# Growth rate
+#### Load data set
+```{r}
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Inoculation experiment/Data/Caterpillar_weight_inoculationExpHM2_GrowthRate.csv")
+```
+
+#### Remove NAs
+```{r}
+data <- data[complete.cases(data[ , "GrowthRate"]),]
+```
+
+## Explore data
+```{r}
+str(data)
+head(data, 12)
+summary(data) #check for outliers
+```
+
+### Summary table
+```{r}
+ddply(data, c("Treatment"), summarize,
+            N = sum(!is.na(ln_GrowthRate)), #number of samples
+            Mis = sum(is.na(ln_GrowthRate)), #number of missing values
+            Mean = round(mean(ln_GrowthRate, na.rm=T),3), #mean
+            Median = round(median(ln_GrowthRate, na.rm=T),3), #median
+            SD = round(sd(ln_GrowthRate, na.rm=T),3), #standard deviation
+            SE = round(sd(ln_GrowthRate, na.rm=T) / sqrt(N),5), #standard error
+            LCI = round(Mean - (2*SE),3), #lower confidence interval
+            HCI = round(Mean + (2*SE),3)) # upper confidence interval
+```
+
+### Plot
+```{r, fig.width=4, fig.height=4}
+ggplot(data = data,
+       mapping = aes(y = ln_GrowthRate, x = Treatment, fill = Treatment)) + #Defines the data
+  stat_boxplot(aes(y = ln_GrowthRate, x = Treatment), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  # facet_wrap(~ Time,
+  #            nrow = 1,
+  #            labeller = labeller(Time = c("21" = "21 days"))) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.15,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 1.5,
+               color = "white",
+               shape = 18) + #Shows the mean as a white circle
+  # geom_segment(aes(x = 0.8, y = 900, xend = 2.2, yend = 900)) +
+  # geom_text(data = DataSum,
+  #           aes(label = Let, y = 400), # fill out the significant letters
+  #           size = 4,
+  #           #hjust = -2.5
+  #           ) + # labels in middle of line
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$ln_GrowthRate*1.2))) +   #y limits
+  scale_fill_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Growth rate") +    #y-label with Mb in italic
+  xlab("Inoculation treatment") +
+  #ggtitle("\nWilcox: p = 0.002") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+```
+
+## Testing model
+```{r, fig.height=7}
+lm1 <- glmmTMB(data = data, formula = ln_GrowthRate ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+lm2 <- glmmTMB(data = data, formula = ln_GrowthRate  ~ Treatment, family = gaussian(link = "identity"))
+
+DHARMa.sum(lm1)
+DHARMa.sum(lm2)
+
+summary(lm1)
+Anova(lm1)
+```
+
+
+```{r}
+rm(data)
+```
+
+
+# Behaviour
+#### Load data set
+```{r}
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Inoculation experiment/Data/Caterpillar_weight_inoculationExpHM2_GrowthRate.csv")
+```
+
+#### Remove NAs
+```{r}
+data <- data[!is.na(data$Cat_location_day.18) &
+             data$Cat_location_day.18 != "", ]
+```
+
+## Explore data
+```{r}
+str(data)
+head(data, 12)
+summary(data) #check for outliers
+```
+
+```{r}
+ggplot(data = data, 
+       mapping = aes(y = Cat_location_day.18, x = Treatment, fill = Cat_location_day.18)) + #Defines the data2
+  geom_bar(data = data, 
+                   stat = "identity", 
+                   position = "stack") +
+  #scale_fill_manual(values = c("#56B4E9", "#009E73"), 
+                  #  name = "Soil treatment", #name in the legend
+                   # labels = c("CTRL", ~italic("M. brassicae\nPicture")),  #labels in the legend
+                    #guide = guide_legend(override.aes = list(pattern = "none"))
+                  #) + # Change legend appearance; guide = FALSE to remove this part in the legend
+  xlab("Caterpillar location day 18") +
+  ylab("Location") +    #y-label
+#  ggtitle(Stats) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 1.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "right")
+```
+

@@ -1,0 +1,185 @@
+---
+title: "Shoot dry weight Inoculation experiment HM"
+author: "Kris"
+date: "2026-05-26"
+output: 
+  html_document: 
+      toc: true
+---
+
+# Start
+## Import pre-made functions
+```{r, warning = FALSE, message = FALSE}
+source("C:/Users/kreek001/OneDrive - Wageningen University & Research/R_Scripts/DHARMa_functions.R") #Functions for comparing distributions, models and model assumptions
+```
+    
+## Libraries
+```{r, warning = FALSE, message = FALSE}
+R.version$version.string # prints R version
+
+library(car) #for Anova function
+packageVersion("car")
+library(emmeans) #for post hoc emmeans
+packageVersion("emmeans")
+library(multcomp) #for cld function at post hoc analysis
+packageVersion("multcomp")
+library(multcompView) #for cld function at post hoc analysis
+packageVersion("multcompView")
+library(ggplot2) #graphs
+packageVersion("ggplot2")
+library(plyr) #for summary table
+packageVersion("plyr")
+library(glmmTMB) #for doing glm with many different options
+packageVersion("glmmTMB")
+
+library(dplyr) # for area underneath curve
+packageVersion("dplyr")
+library(pracma)  # for trapz for area underneath curve
+packageVersion("pracma")
+```
+
+## Load and process data
+#### Load data set
+```{r}
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Inoculation experiment/Data/Shoot_dry_weight_inoculationExperiment.csv")
+```
+
+### Remove NAs
+```{r}
+data <- data[complete.cases(data[ , "Weight"]),]
+```
+
+### Define factors
+```{r}
+#data$Time <- as.factor(data$Time) #defined after plots
+data$Treatment <- factor(data$Treatment, levels = c("Strain 1", "Strain 2", "Strain 3", "WCS417", "Heat-killed", "CTRL"))
+```
+
+# Explore data
+## Check data
+```{r}
+str(data)
+head(data, 12)
+summary(data) #check for outliers
+```
+
+### Summary table
+```{r}
+dataSum <- ddply(data, c("Treatment"), summarize,
+            N = sum(!is.na(Weight)), #number of samples
+            Mis = sum(is.na(Weight)), #number of missing values
+            Mean = round(mean(Weight, na.rm=T),3), #mean
+            Median = round(median(Weight, na.rm=T),3), #median
+            SD = round(sd(Weight, na.rm=T),3), #standard deviation
+            SE = round(sd(Weight, na.rm=T) / sqrt(N),5), #standard error
+            LCI = round(Mean - (2*SE),3), #lower confidence interval
+            HCI = round(Mean + (2*SE),3)) # upper confidence interval
+dataSum
+```
+
+### Plot
+```{r, fig.width=4, fig.height=4}
+ggplot(data = data,
+       mapping = aes(y = Weight, x = Treatment, fill = Treatment)) + #Defines the data
+  stat_boxplot(aes(y = Weight, x = Treatment), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.15,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 1.5,
+               color = "white",
+               shape = 18) + #Shows the mean as a white circle
+  # geom_segment(aes(x = 0.8, y = 900, xend = 2.2, yend = 900)) +
+  # geom_text(data = DataSum,
+  #           aes(label = Let, y = 400), # fill out the significant letters
+  #           size = 4,
+  #           #hjust = -2.5
+  #           ) + # labels in middle of line
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$Weight*1.1))) +   #y limits
+  scale_fill_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#CC79A7", "#882255", "#332288")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Shoot dry weight (g)") +    #y-label with Mb in italic
+  xlab("Inoculation treatment") +
+  ggtitle("\nLMM: p = 0.925") +
+  scale_x_discrete(labels = c("Strain 1" = "Isolate 1",
+                              "Strain 2" = "Isolate 2",
+                              "Strain 3" = "Isolate 3",
+                              "WCS417" = "WCS417",
+                              "Heat-killed" = "Heat-killed",
+                              "CTRL" = "Control")) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 6,
+         height = 5,
+         units = "cm",
+         dpi = 300),
+  x = c("FP_InoculationExpHM_ShootDryWeight.svg", "FP_InoculationExpHM_ShootDryWeight.png"))
+```
+
+### Testing model
+```{r}
+lm2  <- glmmTMB(data = data, formula = Weight ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+lm3  <- glmmTMB(data = data, formula = Weight ~ Treatment, family = gaussian(link = "identity"))
+
+# lm5  <- glmmTMB(data = data, formula = log(Weight) ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+# lm6  <- glmmTMB(data = data, formula = log(Weight) ~ Treatment, family = gaussian(link = "identity"))
+# 
+# lm8  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Treatment + (1 | Block), family = gaussian(link = "identity"))
+# lm9  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Treatment, family = gaussian(link = "identity"))
+# 
+# glm2  <- glmmTMB(data = data, formula = Weight ~ Treatment + (1 | Block), family = Gamma(link = "log"))
+# glm3  <- glmmTMB(data = data, formula = Weight ~ Treatment, family = Gamma(link = "log"))
+# 
+# glm5  <- glmmTMB(data = data, formula = log(Weight) ~ Treatment + (1 | Block), family = Gamma(link = "log"))
+# glm6  <- glmmTMB(data = data, formula = log(Weight) ~ Treatment, family = Gamma(link = "log"))
+# 
+# glm8  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Treatment + (1 | Block), family = Gamma(link = "log"))
+# glm9  <- glmmTMB(data = data, formula = sqrt(Weight) ~ Treatment, family = Gamma(link = "log"))
+```
+
+
+### Model assumptions: DHARMa plots
+```{r, fig.height=7}
+DHARMa.sum(lm2)
+DHARMa.sum(lm3)
+# DHARMa.sum(lm5)
+# DHARMa.sum(lm6)
+# DHARMa.sum(lm8)
+# DHARMa.sum(lm9)
+# 
+# DHARMa.sum(glm2)
+# DHARMa.sum(glm3)
+# DHARMa.sum(glm5)
+# DHARMa.sum(glm6)
+# DHARMa.sum(glm8)
+# DHARMa.sum(glm9)
+```
+
+### Model output
+```{r}
+summary(lm2)
+Anova(lm2)
+```
