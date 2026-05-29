@@ -1,0 +1,410 @@
+---
+title: "12 accession Exp - Caterpillar weight FP - Wild vs Domesticated"
+author: "Kris"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+      toc: true
+      toc_float:
+        collapsed: false
+        smooth_scroll: true
+---
+  
+# Description
+
+   
+# Start
+### Import pre-made functions
+```{r, warning = FALSE, message = FALSE}
+source("C:/Users/kreek001/OneDrive - Wageningen University & Research/R_Scripts/SelfMadeFunctions.R") #Functions for comparing distributions, models and model assumptions
+#source("C:/Users/K/OneDrive - Wageningen University & Research/R_Scripts/SelfMadeFunctions.R")
+```
+  
+### Libraries
+```{r, warning = FALSE, message = FALSE}
+R.version$version.string # prints R version
+
+library(car) #for Anova function
+packageVersion("car")
+library(emmeans) #for post hoc emmeans
+packageVersion("emmeans")
+library(multcomp) #for cld function at post hoc analysis
+packageVersion("multcomp")
+library(multcompView) #for cld function at post hoc analysis
+packageVersion("multcompView")
+library(ggplot2) #graphs
+packageVersion("ggplot2")
+library(ggpubr) #graphs
+packageVersion("ggpubr")
+library(patchwork) # for wrap_plot
+packageVersion("patchwork")
+library(plyr) #for summary table
+packageVersion("plyr")
+library(ggh4x) #for coloring strip facet wrap
+packageVersion("ggh4x")
+library(glmmTMB) #for doing glm with many different options
+packageVersion("glmmTMB")
+library(lme4) #for glm with random factor as alternative to glmmTMB
+packageVersion("lme4")
+library(DHARMa) #for model assumptions
+packageVersion("DHARMa")
+library(cowplot) #for printing legend
+packageVersion("cowplot")
+```
+  
+## Loading data and processing
+### Loading data  
+```{r}
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Metadata FP/Meta_Data_FP.csv")
+```
+  
+### Removing NAs and sterile treatment 
+```{r}
+data <- data[complete.cases(data$Mean_Weight_Cat), ]
+data <- data[data$Soil_conditioning != "S", ]
+```
+  
+### Remove Batch 1 for all accessions
+```{r}
+# cn <- c(which(data$Domestication == "VL" & data$Batch == 1), which(data$Domestication == "HM" & data$Batch == 1))
+# data <- data[ -cn, ]
+data <- data[data$Batch != 1, ]
+```
+  
+### Defining factors  
+```{r}
+data$Soil_conditioning <- as.factor(data$Soil_conditioning)
+data$Batch <- as.factor(data$Batch)
+data$Domestication <- factor(data$Domestication, levels = c("Wild", "Cultivated"))
+```
+  
+# Exploring data
+```{r}
+str(data)
+head(data, 12)
+summary(data) #check for outliers
+table(data$Block_g, data$Domestication, data$Soil_conditioning)
+```
+
+
+## Summary table
+### Domestication
+```{r}
+DataSum <- ddply(data, c("Domestication", "Soil_conditioning"), summarize,
+            N = sum(!is.na(Mean_Weight_Cat)), #number of samples
+            Mis = sum(is.na(Mean_Weight_Cat)), #number of missing values
+            Mean = round(mean(Mean_Weight_Cat, na.rm=T),3), #mean
+            Median = round(median(Mean_Weight_Cat, na.rm=T),3), #median
+            SD = round(sd(Mean_Weight_Cat, na.rm=T),3), #standard deviation
+            SE = round(sd(Mean_Weight_Cat, na.rm=T) / sqrt(N),5), #standard error
+            LCI = round(Mean - (2*SE),3), #lower confidence interval
+            HCI = round(Mean + (2*SE),3)) # upper confidence interval
+print(DataSum)
+
+ddply(data, c("Domestication"), summarize,
+            N = sum(!is.na(Mean_Weight_Cat)), #number of samples
+            Mis = sum(is.na(Mean_Weight_Cat)), #number of missing values
+            Mean = round(mean(Mean_Weight_Cat, na.rm=T),3), #mean
+            Median = round(median(Mean_Weight_Cat, na.rm=T),3), #median
+            SD = round(sd(Mean_Weight_Cat, na.rm=T),3), #standard deviation
+            SE = round(sd(Mean_Weight_Cat, na.rm=T) / sqrt(N),5), #standard error
+            LCI = round(Mean - (2*SE),3), #lower confidence interval
+            HCI = round(Mean + (2*SE),3)) # upper confidence interval
+```
+
+## Plot
+```{r, fig.width=8}
+# Defining color for strip in facet wrap
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#E69F00", 1), rep("#D55E00", 1))))
+
+ggplot(data = data,
+       mapping = aes(y = Mean_Weight_Cat, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Mean_Weight_Cat, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Domestication, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean,
+               geom = "point",
+               size = 1.5,
+               color = "white",
+               shape = 18) + #Shows the mean as a white circle
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 1, 0.25), #steps on the y-axis
+                     limits = c(0, max(data$Mean_Weight_Cat*1.1))) +   #y limits
+  scale_fill_manual(values = c("#56B4E9", "#009E73")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Dry caterpillar weight") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "none")
+```
+
+
+# Statistical analysis
+### Model
+```{r}
+lm1 <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ Domestication*Soil_conditioning, family = gaussian(link = "identity"))
+lm2 <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ Domestication*Soil_conditioning + (1|Accession), family = gaussian(link = "identity"))
+lm2b <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ Domestication*Soil_conditioning + (1|Block_g) + (1|Accession), family = gaussian(link = "identity"))
+lm2n <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ (Domestication/Accession)*Soil_conditioning + (1|Block_g), family = gaussian(link = "identity"))
+
+lm3 <- glmmTMB(data = data, formula = log(Mean_Weight_Cat) ~ Domestication*Soil_conditioning, family = gaussian(link = "identity"))
+lm4 <- glmmTMB(data = data, formula = log(Mean_Weight_Cat) ~ Domestication*Soil_conditioning + (1|Accession), family = gaussian(link = "identity"))
+lm4b <- glmmTMB(data = data, formula = log(Mean_Weight_Cat) ~ Domestication*Soil_conditioning + (1|Accession) + (1|Block_g), family = gaussian(link = "identity"))
+lm5 <- glmmTMB(data = data, formula = sqrt(Mean_Weight_Cat) ~ Domestication*Soil_conditioning, family = gaussian(link = "identity"))
+lm6 <- glmmTMB(data = data, formula = sqrt(Mean_Weight_Cat) ~ Domestication*Soil_conditioning + (1|Accession), family = gaussian(link = "identity"))
+lm6b <- glmmTMB(data = data, formula = sqrt(Mean_Weight_Cat) ~ Domestication*Soil_conditioning + (1|Accession) + (1|Block_g), family = gaussian(link = "identity"))
+
+glm1 <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ Domestication*Soil_conditioning, family = Gamma(link = "log"))
+glm2 <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ Domestication*Soil_conditioning + (1|Accession), family = Gamma(link = "log"))
+glm2b <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ Domestication*Soil_conditioning + (1|Accession) + (1|Block_g), family = Gamma(link = "log"))
+glm3 <- glmmTMB(data = data, formula = log(Mean_Weight_Cat + 1) ~ Domestication*Soil_conditioning, family = Gamma(link = "log"))
+glm4 <- glmmTMB(data = data, formula = log(Mean_Weight_Cat + 1) ~ Domestication*Soil_conditioning + (1|Accession), family = Gamma(link = "log"))
+glm4b <- glmmTMB(data = data, formula = log(Mean_Weight_Cat + 1) ~ Domestication*Soil_conditioning + (1|Accession) + (1|Block_g), family = Gamma(link = "log"))
+glm5 <- glmmTMB(data = data, formula = sqrt(Mean_Weight_Cat) ~ Domestication*Soil_conditioning, family = Gamma(link = "log"))
+glm6 <- glmmTMB(data = data, formula = sqrt(Mean_Weight_Cat) ~ Domestication*Soil_conditioning + (1|Accession), family = Gamma(link = "log"))
+glm6b <- glmmTMB(data = data, formula = sqrt(Mean_Weight_Cat) ~ Domestication*Soil_conditioning + (1|Accession) + (1|Block_g), family = Gamma(link = "log"))
+```
+
+### Model output
+```{r}
+# summary(lm1)
+# Anova(lm1)
+# summary(lm2)
+# Anova(lm2)
+# summary(lm3)
+# Anova(lm3)
+# summary(lm4)
+# Anova(lm4)
+# summary(lm5)
+# Anova(lm5)
+summary(lm6)
+an_lm6 <- Anova(lm6)
+an_lm6
+Stat_catweight_dom <- as.data.frame(an_lm6)
+write.csv(Stat_catweight_dom, "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/Statistical output/Stat_catweight_dom.csv")
+
+# summary(glm1)
+# Anova(glm1)
+# summary(glm2)
+# Anova(glm2)
+summary(glm2b)
+an_glm2b <- Anova(glm2b)
+an_glm2b
+Stat_catweight_dom_glm <- as.data.frame(an_glm2b)
+write.csv(Stat_catweight_dom_glm, "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/Statistical output/Stat_catweight_dom_glm.csv")
+
+# summary(glm3)
+# Anova(glm3)
+# summary(glm4)
+# Anova(glm4)
+# summary(glm5)
+# Anova(glm5)
+# summary(glm6)
+# Anova(glm6)
+```
+
+### Model assumptions
+```{r, fig.width=10, fig.height=7}
+DHARMa.sum(Model = lm1)
+DHARMa.sum(Model = lm2)
+DHARMa.sum(Model = lm2b)
+DHARMa.sum(Model = lm3)
+DHARMa.sum(Model = lm4)
+DHARMa.sum(Model = lm4b)
+DHARMa.sum(Model = lm5)
+DHARMa.sum(Model = lm6)
+DHARMa.sum(Model = lm6b)
+
+DHARMa.sum(Model = glm1)
+DHARMa.sum(Model = glm2)
+DHARMa.sum(Model = glm2b)
+DHARMa.sum(Model = glm3)
+DHARMa.sum(Model = glm4)
+DHARMa.sum(Model = glm4b)
+DHARMa.sum(Model = glm5)
+DHARMa.sum(Model = glm6)
+DHARMa.sum(Model = glm6b)
+```
+
+## Extracting ratios on log scale
+### glmm not transformed
+```{r}
+# Define model
+glm2b <- glmmTMB(data = data, formula = Mean_Weight_Cat ~ Domestication*Soil_conditioning + (1|Accession) + (1|Block_g), family = Gamma(link = "log"))
+
+# Extract ratios on log scale
+EMM_mod_glmm_link <- emmeans(glm2b, pairwise ~ Soil_conditioning | Domestication, adjust = "tukey", type = "link")
+PSF_ratio_glmm_link <- summary(EMM_mod_glmm_link$contrasts, infer = TRUE)
+
+## Add domestication
+PSF_ratio_glmm_link <- as.data.frame(PSF_ratio_glmm_link)
+PSF_ratio_glmm_link$Domestication <- c("Wild", "Cultivated")
+PSF_ratio_glmm_link$Domestication <- factor(PSF_ratio_glmm_link$Domestication, levels = c("Wild", "Cultivated"))
+PSF_ratio_glmm_link
+```
+
+# Final figure
+### Data preperation
+```{r, fig.width=10, fig.height=4}
+# Alter color facet wrap label
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#0072B2", 1), rep("#D55E00", 1))),
+                                                     text_x = elem_list_text(colour = c(rep("white", 1), rep("black", 1))))
+
+DataSum <- data.frame(Domestication = rep(c("Wild", "Cultivated"), each = 2),
+                      Soil_conditioning = rep(c("Co", "Mb"), 2),
+                      lab = c("a", "", "b", ""))
+DataSum$Domestication <- factor(DataSum$Domestication, levels = c("Wild", "Cultivated"))
+
+# Prepare statistical informatin for title graph
+Stats <- paste0("LMM: Dom p < ", 0.001, "; Soil p = ", 0.845, ";\nInteraction p = ", 0.678)
+```
+
+### Figure
+```{r, fig.width = 3.5, fig.height=4}
+ggplot(data = data,
+       mapping = aes(y = Mean_Weight_Cat, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Mean_Weight_Cat, x = Soil_conditioning), #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Domestication, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  geom_segment(aes(x = 0.8, y = 26.5, xend = 2.2, yend = 26.5)) +
+  geom_text(data = DataSum,
+            aes(label = lab, y = 28, x = 1.5), # fill out the significant letters
+            size = 4,
+            hjust = 0.5,
+            #position = position_dodge(0.5)
+           ) +
+  # geom_text(data = DataSum,
+  #           aes(label = lab2, y = 80), # fill out the significant letters
+  #           size = 8,
+  #           hjust = -1.1,
+  #           #position = position_dodge(0.5)
+  #          ) +
+  scale_y_continuous(expand = c(0, 0),   #start graph at y = min and x = min
+                     breaks = seq(0, 25, 5), #steps on the y-axis
+                     limits = c(0, 29.2)) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) +
+  ylab("Dry caterpillar weight (mg)") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  ggtitle(Stats) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10), #, hjust = 0
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3.2,
+         height = 4,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_CatWeight_Dom.svg", "PF_CatWeight_Dom.png"))
+```
+
+### Figure PSF effect
+```{r, fig.width=2.3, fig.height=3}
+p <- ggplot(data = PSF_ratio_glmm_link,
+       mapping = aes(y = estimate, x = Domestication)) + #Defines the data
+  geom_hline(yintercept = 0, 
+             colour = "gray30") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                color = c(rep("#0072B2", 1), rep("#D55E00", 1)),
+                linewidth = 1,
+                width = 0.3) +
+  geom_point(aes(y = estimate, x = Domestication),
+             size = 2) +
+  #scale_color_manual(values = c("Wild" = "#0072B2", "Cultivated" = "#D55E00")) +  
+  #scale_y_continuous(#expand = c(0, 0),        #start graph at y = min and x = min
+    #                 breaks = seq(-0.5, 0.75, 0.25), #steps on the y-axis
+     #                limits = c(-0.5, 0.75)) +   #y limits
+  # geom_text(data = DataSum,
+  #           aes(label = lab2, y = 0.7), # fill out the significant letters
+  #           size = 8) +
+  ylab("PSF ratio caterpillar weight") +    #y-label with Mb in italic
+  xlab("Domestication") +
+  ggtitle(Stats) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+print(p)
+
+mapply(function(x)
+  ggsave(plot = last_plot(),
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 2.8,
+         height = 3,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_PSF_ratio_CatWeigh_Dom.svg", "PF_PSF_ratio_CatWeigh_Dom.png"))
+```
+
+#### Get legend
+```{r, fig.width=1.1, fig.height=0.9}
+legend_dom <- get_legend(p + theme(legend.position = "right"))
+ggdraw(legend_dom)
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 1.1,
+         height = 0.9,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_PSF_ratio_CatWeight_Dom_legend.svg", "PF_PSF_ratio_CatWeigh_Dom_legend.png"))
+```

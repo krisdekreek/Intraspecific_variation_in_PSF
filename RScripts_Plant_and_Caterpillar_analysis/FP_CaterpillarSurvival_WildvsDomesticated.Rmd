@@ -1,0 +1,353 @@
+---
+title: "12 accession Exp - Caterpillar Survival FP"
+author: "Kris"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+      toc: true
+      toc_float:
+        collapsed: false
+        smooth_scroll: true
+---
+
+# Start
+## Import pre-made functions
+```{r, warning = FALSE, message = FALSE}
+source("C:/Users/kreek001/OneDrive - Wageningen University & Research/R_Scripts/SelfMadeFunctions.R") #Functions for comparing distributions, models and model assumptions
+#source("C:/Users/K/OneDrive - Wageningen University & Research/R_Scripts/SelfMadeFunctions.R") #Functions for comparing distributions, models and model assumptions
+```
+
+## Libraries
+```{r, warning = FALSE, message = FALSE}
+library(plyr) #for summary of the data
+packageVersion("plyr")
+library(ggplot2) #graphs
+packageVersion("ggplot2")
+library(ggh4x) #for coloring strip facet wrap
+packageVersion("ggh4x")
+library(car) #for Anova function
+packageVersion("car")
+library(emmeans) #for post hoc emmeans
+packageVersion("emmeans")
+library(multcomp) #for cld function at post hoc analysis
+packageVersion("multcomp")
+library(multcompView) #for cld function at post hoc analysis
+packageVersion("multcompView")
+library(glmmTMB) #for doing glm with many different options
+packageVersion("glmmTMB")
+```
+
+## Processing full data set
+### load data
+```{r}
+#data <- read.csv("../Data/Caterpillar Biomass/Caterpillar_biomass_FP_R.csv")
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Metadata FP/Meta_Data_FP.csv")
+```
+
+### Removing NAs and sterile treatment 
+```{r}
+data <- data[complete.cases(data$Survival_fraction), ]
+data <- data[data$Soil_conditioning != "S", ]
+```
+  
+### Remove Batch 1 for all accessions
+```{r}
+#cn <- c(which(data$Accession == "VL" & data$Batch == 1), which(data$Accession == "HM" & data$Batch == 1))
+data <- data[data$Batch != 1, ]
+```
+  
+### Defining factors
+```{r}
+data$Soil_conditioning <- as.factor(data$Soil_conditioning)
+#data$Batch <- as.factor(data$Batch)
+data$Block_g <- as.factor(data$Block_g)
+data$Domestication <- factor(data$Domestication, levels = c("Wild", "Cultivated"))
+#data$Origin <- as.factor(data$Origin)
+```
+
+# Exploring data
+```{r}
+str(data[ , c(1:10, 57:62)])
+head(data[ , c(1:10, 57:62)], 12)
+summary(data[ , c(1:10, 57:62)]) #check for outliers
+```
+
+## Summary table
+```{r}
+DataSum <- ddply(data, c("Domestication", "Soil_conditioning"), summarise,
+      N = sum(!is.na(Survival_fraction)), #number of samples
+      Mis = sum(is.na(Survival_fraction)), #number of missing values
+      Mean = round(mean(Survival_fraction, na.rm = T), 3), #mean
+      Median = round(median(Survival_fraction, na.rm = T), 3), #median
+      SD = round(sd(Survival_fraction, na.rm = T), 3), #standard deviation
+      SE = round(sd(Survival_fraction, na.rm = T) / sqrt(N), 5), #standard error
+      LCI = round(Mean - (2*SE), 3), #lower confidence interval
+      HCI = round(Mean + (2*SE), 3)) # upper confidence interval
+print(DataSum)
+```
+
+## Data plot
+### Batches together
+```{r}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#E69F00", 1), rep("#D55E00", 1))))
+
+ggplot(data = data,
+       mapping = aes(y = Survival_fraction, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Survival_fraction, x = Soil_conditioning), #Error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Domestication, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 1, 0.25), #steps on the y-axis
+                     limits = c(0, max(1.05))) +   #y limits
+  scale_fill_manual(values = c("#56B4E9", "#009E73")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Fraction surviving caterpillars") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "none")
+```
+
+### Batches split
+```{r, fig.width=10}
+strip1 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#E69F00", 2), rep("#D55E00", 2), rep("gray", 4))))
+
+ggplot(data = data,
+       mapping = aes(y = Survival_fraction, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Survival_fraction, x = Soil_conditioning), #Error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Domestication + Batch, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip1
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 1, 0.25), #steps on the y-axis
+                     limits = c(0, max(1.05))) +   #y limits
+  scale_fill_manual(values = c("#56B4E9", "#009E73")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Fraction surviving caterpillars") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "none")
+```
+
+# Statistical analysis
+## Testing only batch 2
+### Defining model
+```{r}
+glmb1 <- glmmTMB(data = data, formula = cbind(Survival, Dead) ~ Domestication*Soil_conditioning, family = binomial(link = "logit"))
+glmbb1 <- glmmTMB(data = data, formula = cbind(Survival, Dead) ~ Domestication*Soil_conditioning, family = betabinomial(link = "logit"))
+
+glmb2 <- glmmTMB(data = data, formula = cbind(Survival, Dead) ~ Domestication*Soil_conditioning + (1 | Accession), family = binomial(link = "logit"))
+#glmbb2 <- glmmTMB(data = data, formula = cbind(Survival, Dead) ~ Domestication*Soil_conditioning + (1 | Accession), family = betabinomial(link = "logit"))
+
+glmb3 <- glmmTMB(data = data, formula = cbind(Survival, Dead) ~ Domestication*Soil_conditioning + (1 | Accession) + (1 | Block_g), family = binomial(link = "logit"))
+glmbb3 <- glmmTMB(data = data, formula = cbind(Survival, Dead) ~ Domestication*Soil_conditioning + (1 | Block_g), family = betabinomial(link = "logit"))
+```
+
+### Model output
+```{r}
+# summary(glmb1)
+# summary(glmbb1)
+# Anova(glmb1)
+# Anova(glmbb1)
+# 
+# summary(glmb2)
+summary(glmb3)
+# Anova(glmb2)
+Anova(glmb3)
+
+an_glmb3 <- Anova(glmb3)
+Stat_catsurvival_dom <- as.data.frame(an_glmb3)
+write.csv(Stat_catsurvival_dom, "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/Statistical output/Stat_catsurvival_dom.csv")
+```
+
+### Model assumptions
+```{r, fig.width=10, fig.height=7}
+DHARMa.sum(Model = glmb1)
+DHARMa.sum(Model = glmbb1)
+
+DHARMa.sum(Model = glmb2)
+#DHARMa.sum(Model = glmbb2)
+
+DHARMa.sum(Model = glmb3)
+DHARMa.sum(Model = glmbb3)
+```
+   
+<!-- ### Post hoc test -->
+<!-- ```{r} -->
+<!-- emmeans(glmbb1, pairwise ~ Domestication) -->
+<!-- ph <- cld(emmeans(glmbb1, pairwise ~ Domestication), Letters = letters) -->
+<!-- print(ph) -->
+<!-- ``` -->
+   
+# Final figure
+### Data preperation
+```{r, fig.width=10, fig.height=4}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#0072B2", 1), rep("#D55E00", 1))),
+                       text_x = elem_list_text(colour = c(rep("white", 1), rep("black", 1))))
+
+Stats <- paste0("GLMM: Dom p < ", 0.026, "; Soil p = ", 0.088, "; \nInteraction p = ", 0.230)
+
+DataSum$Letters <- c("a", "", "b", "")
+```
+
+### Figure
+```{r, fig.width=3.5, fig.height=4}
+ggplot(data = data,
+       mapping = aes(y = Survival_fraction, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = Survival_fraction, x = Soil_conditioning), #Error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar",
+               linetype = 1,
+               width = 0.2) +
+  facet_wrap2(~ Domestication, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) + # Split data into three graphs, a graph for each caterpillar number
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot and do not show outliers, this is shown by jitter
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  geom_segment(aes(x = 0.8, y = 1.11, xend = 2.2, yend = 1.11)) +
+  geom_text(data = DataSum,
+            aes(label = Letters, y = 1.15, x = 1.5), # fill out the significant letters
+            size = 4,
+            hjust = 0.5,
+            #position = position_dodge(0.5)
+           ) +
+  #geom_text(data = DataSum,
+   #         aes(label = lab2, y = 1.1), # fill out the significant letters
+    #        size = 8,
+     #       hjust = -1.1,
+            #position = position_dodge(0.5)
+      #     ) +
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     breaks = seq(0, 1, 0.2), #steps on the y-axis
+                     limits = c(0, 1.2)) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) + # Manually change the colors of the bars. You need to define fill in second line of the plot script to get it working; c("#009E73", "#56B4E9")
+  ylab("Fraction surviving caterpillars") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  ggtitle(Stats) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), #no border around the graph (for border, use: element_rect(color = "gray30", fill = NA))
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 9, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        legend.position = "none")
+```
+
+```{r}
+colnames(DataSum)[5] <- "Survival_fraction"
+```
+
+```{r, fig.width=3.2, fig.height=4}
+ggplot(data = data,
+       aes(y = Survival_fraction, x = Soil_conditioning)) + #Defines the data
+  geom_errorbar(data = DataSum, 
+                aes(ymin = Survival_fraction - SE, ymax = Survival_fraction + SE, color = Soil_conditioning), 
+                linewidth = 1,
+                width = 0.3) +
+  geom_point(data = DataSum,
+             aes(y = Survival_fraction, x = Soil_conditioning, color = Soil_conditioning),
+             size = 2) +
+  facet_wrap2(~ Domestication, #facet wrap2 needed to color strip
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(CaterpillarNr = c("4" = "4 Cat", "8" = "8 Cat"))
+             ) +
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  geom_segment(aes(x = 0.8, y = 1.05, xend = 2.2, yend = 1.05)) +
+  geom_text(data = DataSum,
+            aes(label = Letters, y = 1.1, x = 1.5), # fill out the significant letters
+            size = 4,
+            #position = position_dodge(0.5),
+            hjust = 0.5) +
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     breaks = seq(0, 1, 0.25), #steps on the y-axis
+                     limits = c(0, 1.15)) +   #y limits
+  scale_color_manual(values = c("Co" = "#882255", "Mb" = "#009E73")) +  
+  ylab("Fraction surviving caterpillars") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  ggtitle(Stats) +
+    theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3.4,
+         height = 4,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_Catsurvival_Dom.svg", "PF_Catsurvival_Dom.png"))
+```

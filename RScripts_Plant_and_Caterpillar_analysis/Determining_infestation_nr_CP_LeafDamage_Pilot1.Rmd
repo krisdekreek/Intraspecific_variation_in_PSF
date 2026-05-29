@@ -1,0 +1,256 @@
+---
+title: "Leaf damage - Pilot 1 - Determining infestation number CP"
+author: "Kris"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+      toc: true
+      toc_float:
+        collapsed: false
+        smooth_scroll: true
+---
+
+# Introduction
+
+   
+
+# Start
+## Libraries
+```{r, warning = FALSE, message = FALSE}
+R.version$version.string # prints R version
+
+library(car) #for Anova function
+packageVersion("car")
+library(emmeans) #for post hoc emmeans
+packageVersion("emmeans")
+library(multcomp) #for cld function at post hoc analysis
+packageVersion("multcomp")
+library(multcompView) #for cld function at post hoc analysis
+packageVersion("multcompView")
+library(ggplot2) #graphs
+packageVersion("ggplot2")
+library(ggh4x) #for coloring strip facet wrap
+packageVersion("ggh4x")
+library(plyr) #for summary table
+packageVersion("plyr")
+library(glmmTMB) #for doing glm with many different options
+packageVersion("glmmTMB")
+```
+
+## Loading data and processing
+#### Loading data
+```{r}
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Pilot 1 Determining infestation nr CP/Pilot1_Leafdamage_DataSummary.csv")
+```
+
+#### Remove NAs
+```{r}
+data <- data[complete.cases(data[ , "Consumed_Leaf_Area"]),]
+```
+
+#### Defining factors
+```{r}
+data$Accession <- factor(data$Accession, levels = c("DD", "OH", "HE", "CD", "KT", "KI", "MC", "SA", "GO1", "IT1", "IT2", "RI", "VL", "GO2", "BS", "CY"))
+```
+
+```{r}
+summary(data$Consumed_Leaf_Area)
+table(data$Accession)
+```
+
+
+# Determine inductin number CP 12 accession experiment
+### Preparing data set
+```{r}
+mean_fc <- mean(data$Fr_Consumed) #calculating the overall mean of all accessions together of the fraction of plants that is consumed 
+data$Change <- data$Fr_Consumed / mean_fc #calculate the fold difference of the fraction eaten per plant relative to the overall mean
+```
+
+#### Summary table
+```{r}
+sumtab <- cbind(aggregate(x = data$Consumed_Leaf_Area, by = list(data$Accession), FUN = mean),
+                aggregate(x = data$Fr_Consumed, by = list(data$Accession), FUN = mean)$x,
+                aggregate(x = data$Change, by = list(data$Accession), FUN = mean)$x)
+colnames(sumtab) <- c("Accession", "CLA", "FCLA", "Change")
+sumtab
+```
+
+### Exploring fold difference in induciton number
+```{r}
+summary(data$Change)
+plot(Change ~ Accession, data = data, las = 2)
+abline(h = 1)
+```
+
+### Exploring difference in induction number
+```{r}
+data_S <- aggregate(x = data$Change, by = list(data$Accession), FUN = mean) #Make as summary of the data per accession to determine order in graphs below
+colnames(data_S) <- c("Accession", "Mean_ch")
+
+data_S$Catnr4 <- (1/data_S$Mean_ch) * 4 #calculating the number of caterpillars on a plant to have get similar feeding damage on all accessions. In the future experiments, on average 4 caterpillars will be introduced
+data_S$Catnr4r <- round(data_S$Catnr4, digits = 0) #round the number of caterpillars
+
+print(data_S)
+```
+
+### Calculate induction number by starting with means of change per accession
+```{r}
+plot(Catnr4r ~ Accession, data = data_S, las = 2,  ylab = "Number of caterpillars", ylim = c(0, max(Catnr4r)+3))
+j <- 0
+invisible(sapply(data_S$Catnr4r,
+                 function(i) {
+                   j <<- j + 1
+                   text(j, i+2, paste(i))})) #plotting the number of caterpillars above the line
+```
+
+
+# Plotting data
+### Removing accessions not tested in 12 accession experiment
+```{r}
+unique(data$Accession)
+Acc_rm <- c("BS", "GO2", "IT2", "SA")
+data <- data[!data$Accession %in% Acc_rm, ]
+data_S <- data_S[!data_S$Accession %in% Acc_rm, ]
+data_S$Accession <- droplevels(data_S$Accession)
+```
+
+### Plot induction number
+```{r}
+plot(Catnr4r ~ Accession, data = data_S, las = 2,  ylab = "Number of caterpillars", ylim = c(0, max(Catnr4r)+3))
+j <- 0
+invisible(sapply(data_S$Catnr4r,
+                 function(i) {
+                   j <<- j + 1
+                   text(j, i+2, paste(i))})) #plotting the number of caterpillars above the line
+```
+
+### Defining factors
+```{r}
+# data$Accession <- factor(data$Accession, levels = c("DD", "OH", "HE", "KI", "CD", "KT", "MC", "IT1", "GO1", "RI", "VL", "CY"))
+# data_S$Accession <- factor(data_S$Accession, levels = c("DD", "OH", "HE", "KI", "CD", "KT", "MC", "IT1", "GO1", "RI", "VL", "CY"))
+```
+
+### Plot consumed leaf area
+```{r, fig.width=10, fig.height=4}
+ggplot(data = data, 
+       mapping = aes(y = Consumed_Leaf_Area, x = Accession, fill = Accession)) + #Defines the data
+  stat_boxplot(aes(y = Consumed_Leaf_Area, x = Accession),  
+               geom = "errorbar", 
+               linetype = 1, 
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  #geom_segment(aes(x = 0.8, y = 1.4, xend = 2.2, yend = 1.4)) +
+  # geom_text(data = Test,
+  #           aes(label = Letters, y = 1.2), # fill out the significant letters
+  #           size = 4,
+  #           hjust = 0.5) +
+  # geom_vline(xintercept = c(0.4, 2.6), color = "gray60") +
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$Consumed_Leaf_Area)*1.15)) +   #y limits
+  scale_fill_manual(values = c(rep("#0072B2", 4), "#D55E00", "#0072B2", rep("#D55E00", 6))) +
+  ylab(bquote("Leaf damage " ~(cm^2))) +    #y-label with Mb in italic
+  xlab("Accession") +
+  # ggtitle(Stats) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+```
+
+### Plot fraction consumed leaf area of total leaf area
+```{r, fig.width=10, fig.height=4}
+p <- ggplot(data = data, 
+       mapping = aes(y = Fr_Consumed, x = Accession, fill = Accession)) + #Defines the data
+  stat_boxplot(aes(y = Fr_Consumed, x = Accession),  
+               geom = "errorbar", 
+               linetype = 1, 
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  #geom_segment(aes(x = 0.8, y = 1.4, xend = 2.2, yend = 1.4)) +
+  # geom_text(data = Test,
+  #           aes(label = Letters, y = 1.2), # fill out the significant letters
+  #           size = 4,
+  #           hjust = 0.5) +
+  # geom_vline(xintercept = c(0.4, 2.6), color = "gray60") +
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$Fr_Consumed)*1.15)) +   #y limits
+  scale_fill_manual(values = c(rep("#0072B2", 4), "#D55E00", "#0072B2", rep("#D55E00", 6))) +
+  ylab("Fraction consumed leaf area") +    #y-label with Mb in italic
+  xlab("Accession") +
+  # ggtitle(Stats) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+```
+```{r, fig.width=7, fig.height=4}
+print(p)
+```
+```{r, fig.width=7, fig.height=4}
+maxdat <- aggregate(x = data$Fr_Consumed, by = list(data$Accession), FUN = max)
+colnames(maxdat) <- c("Accession", "Max")
+data_S <- merge(data_S, maxdat, by = "Accession")
+data_S$Accession <- factor(data_S$Accession, levels = c("DD", "OH", "HE", "CD", "KT", "KI", "MC", "GO1", "IT1", "RI", "VL", "CY"))
+
+p + geom_text(data = data_S,
+              aes(x = Accession, y = Max + 0.01),
+              label = data_S$Catnr4r)
+
+p + geom_text(data = data_S,
+              aes(x = Accession, y = 0.105),
+              label = data_S$Catnr4r)
+
+p + geom_text(data = data_S,
+              aes(x = Accession, y = c(rep(0.003, 2), 0.017, rep(0.003, 9)),
+              label = Catnr4r))
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 10,
+         height = 5,
+         units = "cm",
+         dpi = 300),
+  x = c("Pilot1_Leafdamagefraction.svg", "Pilot1_Leafdamagefraction.png"))
+```
+
+
+

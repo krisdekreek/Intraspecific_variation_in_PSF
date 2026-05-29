@@ -1,0 +1,787 @@
+---
+title: "C and N content - 12 accession experiment FP"
+author: "Kris"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+      toc: true
+      toc_float:
+        collapsed: false
+        smooth_scroll: true
+---
+# Introduction
+
+   
+
+# Start
+## Import pre-made functions
+```{r, warning = FALSE, message = FALSE}
+source("C:/Users/kreek001/OneDrive - Wageningen University & Research/R_Scripts/SelfMadeFunctions.R") #Functions for comparing distributions, models and model assumptions
+```
+    
+## Libraries
+```{r, warning = FALSE, message = FALSE}
+R.version$version.string # prints R version
+
+library(car) #for Anova function
+packageVersion("car")
+library(emmeans) #for post hoc emmeans
+packageVersion("emmeans")
+library(multcomp) #for cld function at post hoc analysis
+packageVersion("multcomp")
+library(multcompView) #for cld function at post hoc analysis
+packageVersion("multcompView")
+library(ggplot2) #graphs
+packageVersion("ggplot2")
+library(ggh4x) #for coloring strip facet wrap
+packageVersion("ggh4x")
+library(plyr) #for summary table
+packageVersion("plyr")
+library(glmmTMB) #for doing glm with many different options
+packageVersion("glmmTMB")
+```
+
+## Loading data and processing
+#### Loading data
+```{r}
+data <- read.csv("C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Data/Metadata FP/Meta_Data_FP.csv")
+```
+
+#### Remove NAs
+```{r}
+data <- data[complete.cases(data[ , "C_content"]),]
+```
+
+#### Remove RI
+```{r}
+data <- data[data$Accession != "RI", ]
+```
+
+#### Defining factors
+```{r}
+data$Soil_conditioning <- as.factor(data$Soil_conditioning)
+data$Accession <- factor(data$Accession, levels = c("VL", "CD", "HM", "GO1"))
+```
+
+# Data analysis
+## Data exploration
+```{r}
+str(data[c(1:8, 51:54)])
+head(data[c(1:8, 51:54)], 12)
+summary(data[c(1:8, 51:54)]) #check for outliers
+table(data$Batch, data$Accession, data$Soil_conditioning)
+table(data$Accession, data$Soil_conditioning)
+data[data$Accession == "GO1", c(1:3, 6, 51:53)] # Three samples of GO1 Co are from batch 1. There does not seem to be a batch effect.
+``` 
+
+## Summary table
+### Summary table C
+```{r}
+ddply(data, c("Accession", "Soil_conditioning"), summarise,
+      N = sum(!is.na(C_content)), #number of samples
+      Mis = sum(is.na(C_content)), #number of missing values
+      Mean = round(mean(C_content, na.rm=T),3), #mean
+      Median = round(median(C_content, na.rm=T),3), #median
+      SD = round(sd(C_content, na.rm=T),3), #standard deviation
+      SE = round(sd(C_content, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(data, c("Accession"), summarise,
+      N = sum(!is.na(C_content)), #number of samples
+      Mis = sum(is.na(C_content)), #number of missing values
+      Mean = round(mean(C_content, na.rm=T),3), #mean
+      Median = round(median(C_content, na.rm=T),3), #median
+      SD = round(sd(C_content, na.rm=T),3), #standard deviation
+      SE = round(sd(C_content, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(data, c("Soil_conditioning"), summarise,
+      N = sum(!is.na(C_content)), #number of samples
+      Mis = sum(is.na(C_content)), #number of missing values
+      Mean = round(mean(C_content, na.rm=T),3), #mean
+      Median = round(median(C_content, na.rm=T),3), #median
+      SD = round(sd(C_content, na.rm=T),3), #standard deviation
+      SE = round(sd(C_content, na.rm=T) / sqrt(N),5), #standard error
+      LCI = round(Mean - (2*SE),3), #lower confidence interval
+      HCI = round(Mean + (2*SE),3)) # upper confidence interval
+
+```
+    
+### Summary table N
+```{r}
+ddply(data, c("Accession", "Soil_conditioning"), summarise,
+      N = sum(!is.na(N_content)), #number of samples
+      Mis = sum(is.na(N_content)), #number of missing values
+      Mean = round(mean(N_content, na.rm=T),3), #mean
+      Median = round(median(N_content, na.rm=T),3), #median
+      SD = round(sd(N_content, na.rm=T),3), #standard deviation
+      SE = round(sd(N_content, na.rm=T) / sqrt(N),5), #standard error
+      LNI = round(Mean - (2*SE),3), #lower confidence interval
+      HNI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(data, c("Accession"), summarise,
+      N = sum(!is.na(N_content)), #number of samples
+      Mis = sum(is.na(N_content)), #number of missing values
+      Mean = round(mean(N_content, na.rm=T),3), #mean
+      Median = round(median(N_content, na.rm=T),3), #median
+      SD = round(sd(N_content, na.rm=T),3), #standard deviation
+      SE = round(sd(N_content, na.rm=T) / sqrt(N),5), #standard error
+      LNI = round(Mean - (2*SE),3), #lower confidence interval
+      HNI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(data, c("Soil_conditioning"), summarise,
+      N = sum(!is.na(N_content)), #number of samples
+      Mis = sum(is.na(N_content)), #number of missing values
+      Mean = round(mean(N_content, na.rm=T),3), #mean
+      Median = round(median(N_content, na.rm=T),3), #median
+      SD = round(sd(N_content, na.rm=T),3), #standard deviation
+      SE = round(sd(N_content, na.rm=T) / sqrt(N),5), #standard error
+      LNI = round(Mean - (2*SE),3), #lower confidence interval
+      HNI = round(Mean + (2*SE),3)) # upper confidence interval
+```
+
+### Summary table C_N_ratio
+```{r}
+ddply(data, c("Accession", "Soil_conditioning"), summarise,
+      N = sum(!is.na(C_N_ratio)), #number of samples
+      Mis = sum(is.na(C_N_ratio)), #number of missing values
+      Mean = round(mean(C_N_ratio, na.rm=T),3), #mean
+      Median = round(median(C_N_ratio, na.rm=T),3), #median
+      SD = round(sd(N, na.rm=T),3), #standard deviation
+      SE = round(sd(N, na.rm=T) / sqrt(N),5), #standard error
+      LNI = round(Mean - (2*SE),3), #lower confidence interval
+      HNI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(data, c("Accession"), summarise,
+      N = sum(!is.na(C_N_ratio)), #number of samples
+      Mis = sum(is.na(C_N_ratio)), #number of missing values
+      Mean = round(mean(C_N_ratio, na.rm=T),3), #mean
+      Median = round(median(C_N_ratio, na.rm=T),3), #median
+      SD = round(sd(N, na.rm=T),3), #standard deviation
+      SE = round(sd(N, na.rm=T) / sqrt(N),5), #standard error
+      LNI = round(Mean - (2*SE),3), #lower confidence interval
+      HNI = round(Mean + (2*SE),3)) # upper confidence interval
+
+ddply(data, c("Soil_conditioning"), summarise,
+      N = sum(!is.na(C_N_ratio)), #number of samples
+      Mis = sum(is.na(C_N_ratio)), #number of missing values
+      Mean = round(mean(C_N_ratio, na.rm=T),3), #mean
+      Median = round(median(C_N_ratio, na.rm=T),3), #median
+      SD = round(sd(N, na.rm=T),3), #standard deviation
+      SE = round(sd(N, na.rm=T) / sqrt(N),5), #standard error
+      LNI = round(Mean - (2*SE),3), #lower confidence interval
+      HNI = round(Mean + (2*SE),3)) # upper confidence interval
+```
+
+
+# Statistical analysis
+## Testing model
+### Making function
+```{r}
+lmTest <- function(x) {
+  lm1 <- glmmTMB(data = data, formula = x ~ Accession * Soil_conditioning, family = gaussian(link = "identity"))
+  Output <- list()
+  Output[[1]] <- summary(lm1)
+  Output[[2]] <- Anova(lm1)
+  names(Output) <- c("LM - Summary", "LM - Anova")
+  print(Output)
+}
+
+lmlogTest <- function(x) {
+  lm2 <- glmmTMB(data = data, formula = log(x) ~ Accession * Soil_conditioning, family = gaussian(link = "identity"))
+  Output <- list()
+  Output[[1]] <- summary(lm2)
+  Output[[2]] <- Anova(lm2)
+  names(Output) <- c("LM with log transformed data - Summary", "LM with log transfomred data - Anova")
+  print(Output)
+}
+
+lmSqrtTest <- function(x) {
+  lm2 <- glmmTMB(data = data, formula = sqrt(x) ~ Accession * Soil_conditioning, family = gaussian(link = "identity"))
+  Output <- list()
+  Output[[1]] <- summary(lm2)
+  Output[[2]] <- Anova(lm2)
+  names(Output) <- c("LM with sqrt transformed data - Summary", "LM with sqrt transfomred data - Anova")
+  print(Output)
+}
+
+glmTest <- function(x) {
+  glm1 <- glmmTMB(data = data, formula = (x) ~ Accession * Soil_conditioning, family = Gamma(link = "log"))
+  Output <- list()
+  Output[[1]] <- summary(glm1)
+  Output[[2]] <- Anova(glm1)
+  names(Output) <- c("GLM gamma - Summary", "GLM gamma Anova")
+  print(Output)
+}
+
+glmlogTest <- function(x) {
+  glm2 <- glmmTMB(data = data, formula = log(x) ~ Accession * Soil_conditioning, family = Gamma(link = "log"))
+  Output <- list()
+  Output[[1]] <- summary(glm2)
+  Output[[2]] <- Anova(glm2)
+  names(Output) <- c("GLM gamma with log transformed data - Summary", "GLM gamma with log transformed data - Anova")
+  print(Output)
+}
+
+glmSqrtTest <- function(x) {
+  glm2 <- glmmTMB(data = data, formula = sqrt(x) ~ Accession * Soil_conditioning, family = Gamma(link = "log"))
+  Output <- list()
+  Output[[1]] <- summary(glm2)
+  Output[[2]] <- Anova(glm2)
+  names(Output) <- c("GLM gamma with sqrt transformed data - Summary", "GLM gamma with sqrt transformed data - Anova")
+  print(Output)
+}
+```
+
+### Model output
+```{r, results='hide'}
+Col_number <- c(53:55) # columns of which I want statistical analysis
+List_Stats_Leaf_CP <- list() # make an empty list to store output
+
+for (i in Col_number) {
+  List_Stats_Leaf_CP[[length(List_Stats_Leaf_CP) + 1]] <- lmTest(x = data[ , i])
+  List_Stats_Leaf_CP[[length(List_Stats_Leaf_CP) + 1]] <- lmlogTest(x = data[ , i])
+  List_Stats_Leaf_CP[[length(List_Stats_Leaf_CP) + 1]] <- lmSqrtTest(x = data[ , i])
+  List_Stats_Leaf_CP[[length(List_Stats_Leaf_CP) + 1]] <- glmTest(x = data[ , i])
+  List_Stats_Leaf_CP[[length(List_Stats_Leaf_CP) + 1]] <- glmlogTest(x = data[ , i])
+  List_Stats_Leaf_CP[[length(List_Stats_Leaf_CP) + 1]] <- glmSqrtTest(x = data[ , i])
+
+  print(List_Stats_Leaf_CP)
+}
+```
+```{r}
+names(List_Stats_Leaf_CP) <- paste(rep(colnames(data[53:55]), each = 6), rep(c(1:6), times = 3), sep = "")
+print(List_Stats_Leaf_CP)
+```
+
+### Extract p-values
+```{r}
+stats_l <- list(N_content = List_Stats_Leaf_CP$N_content1$`LM - Anova`, 
+                C_content = List_Stats_Leaf_CP$C_content5$`GLM gamma with log transformed data - Anova`,
+                C_N_ratio = List_Stats_Leaf_CP$C_N_ratio6$`GLM gamma with sqrt transformed data - Anova`)
+
+stats_df_l <- lapply(names(stats_l), function(x) {
+  df <- as.data.frame(stats_l[[x]])
+  df$Analysis <- x
+  df$Factor <- rownames(stats_l[[x]])
+  return(df)
+})
+
+Stat_CN_acc <- do.call(rbind, stats_df_l)[c(4,5,1:3)]
+Stat_CN_acc
+
+write.csv(Stat_CN_acc, "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/RScripts/Statistical output/Stat_CN_acc.csv")
+```
+
+
+## Model assumptions
+### Making fuction
+```{r, fig.width=10, fig.height=6}
+lmFunc <- function(x) {
+  lm <- glmmTMB(data = data, formula = x ~ Accession * Soil_conditioning, family = gaussian(link = "identity"))
+}
+
+lmlogFunc <- function(x) {
+  lm <- glmmTMB(data = data, formula = log(x) ~ Accession * Soil_conditioning, family = gaussian(link = "identity"))
+}
+
+lmSqrtFunc <- function(x) {
+  lm <- glmmTMB(data = data, formula = sqrt(x) ~ Accession * Soil_conditioning, family = gaussian(link = "identity"))
+}
+
+glmFunc <- function(x) {
+  glm <- glmmTMB(data = data, formula = x ~ Accession * Soil_conditioning, family = Gamma(link = "log"))
+}
+
+glmlogFunc <- function(x) {
+  glm <- glmmTMB(data = data, formula = log(x) ~ Accession * Soil_conditioning, family = Gamma(link = "log"))
+}
+
+glmSqrtFunc <- function(x) {
+  glm <- glmmTMB(data = data, formula = sqrt(x) ~ Accession * Soil_conditioning, family = Gamma(link = "log"))
+}
+```
+
+### Model output
+```{r, fig.width=10, fig.height=7}
+List_Asump_Leaf_CP <- list()
+
+for (i in 1:length(Col_number)) {
+  print(c(colnames(data)[Col_number[i]], "Linear model"))
+    List_Asump_Leaf_CP[[length(List_Asump_Leaf_CP) + 1]] <- DHARMa.sum(lmFunc(x = data[ , Col_number[i]]))
+  print(c(colnames(data)[Col_number[i]], "Linear model with log transformed data"))
+  List_Asump_Leaf_CP[[length(List_Asump_Leaf_CP) + 1]] <- DHARMa.sum(lmlogFunc(x = data[ , Col_number[i]]))
+  print(c(colnames(data)[Col_number[i]], "Linear model with sqrt transformed data"))
+  List_Asump_Leaf_CP[[length(List_Asump_Leaf_CP) + 1]] <- DHARMa.sum(lmSqrtFunc(x = data[ , Col_number[i]]))
+  print(c(colnames(data)[Col_number[i]], "GLM with gamma distribution "))
+  List_Asump_Leaf_CP[[length(List_Asump_Leaf_CP) + 1]] <- DHARMa.sum(glmFunc(x = data[ , Col_number[i]]))
+  print(c(colnames(data)[Col_number[i]], "GLM with gamma distribution and log transformed data"))
+  List_Asump_Leaf_CP[[length(List_Asump_Leaf_CP) + 1]] <- DHARMa.sum(glmlogFunc(x = data[ , Col_number[i]]))
+  print(c(colnames(data)[Col_number[i]], "GLM with gamma distribution and sqrt transformed data"))
+  List_Asump_Leaf_CP[[length(List_Asump_Leaf_CP) + 1]] <- DHARMa.sum(glmSqrtFunc(x = data[ , Col_number[i]]))
+}
+
+names(List_Asump_Leaf_CP) <- rep(colnames(data[53:55]), each = 6)
+```
+
+### Post hoc test
+```{r}
+# N
+emmeans(lmFunc(x = data[ , 53]), pairwise ~ Accession)
+emmN <- cld(emmeans(lmFunc(x = data[ , 53]), pairwise ~ Accession), Letters = letters)
+emmN
+
+# C
+emmeans(glmlogFunc(x = data[ , 54]), pairwise ~ Accession)
+emmC <- cld(emmeans(glmlogFunc(x = data[ , 54]), pairwise ~ Accession), Letters = letters, decreasing = TRUE)
+emmC
+
+# c/N
+emmeans(glmSqrtFunc(x = data[ , 55]), pairwise ~ Accession)
+emmCN <- cld(emmeans(glmSqrtFunc(x = data[ , 55]), pairwise ~ Accession), Letters = letters, decreasing = TRUE)
+emmCN
+```
+
+### Extracting ratios on log scale gamma distribution
+only for C/N ratio
+```{r}
+# C/N
+# Define function to extract ratios on log scale
+EMM_mod <- emmeans(glmFunc(x = data[ , 55]), pairwise ~ Soil_conditioning | Accession, adjust = "tukey", type = "link")
+EMM_mod_df <- as.data.frame(summary(EMM_mod$contrasts, infer = TRUE))
+
+# Define factors
+EMM_mod_df$Accession <- factor(EMM_mod_df$Accession, levels = c("VL", "CD", "HM", "GO1"))
+EMM_mod_df
+```
+
+# Kruskal Wallis Test 
+## Define funciton
+```{r}
+Kr_test <- function(x, factor) {
+  kruskal.test(data = data, x ~ factor)
+}
+```
+
+## Printing output
+```{r}
+fac <- c(2:3)
+comb <- data.frame(Fac = rep(fac, each = 3),
+                   Col_number = rep(Col_number, times = 2))
+
+List_KrStats_Leaf_CP <- list() # make an empty list to store output
+
+for (i in 1:length(comb$Col_number)) {
+  List_KrStats_Leaf_CP[[i]] <- Kr_test(x = data[ , comb$Col_number[i]], 
+                                       factor = data[ , comb$Fac[i]])
+}
+```
+```{r}
+names(List_KrStats_Leaf_CP) <- paste(colnames(data[comb$Fac]), 
+                                     colnames(data[comb$Col_number]))
+print(List_KrStats_Leaf_CP)
+```
+
+## Pairwise comparisons
+### Define function
+```{r}
+Pw_Kr_test <- function(x, factor) {
+  pairwise.wilcox.test(x, factor, p.adjust.method = "BH")
+}
+```
+
+### Printing output
+```{r, warning=FALSE}
+List_PWKrStats_Leaf_CP <- list() # make an empty list to store output
+
+for (i in 1:length(comb$Col_number)) {
+  List_PWKrStats_Leaf_CP[[i]] <- Pw_Kr_test(x = data[ , comb$Col_number[i]], 
+                                            factor = data[ , comb$Fac[i]])
+}
+```
+```{r}
+names(List_PWKrStats_Leaf_CP) <- paste(colnames(data[comb$Fac]), 
+                                       colnames(data[comb$Col_number]))
+print(List_PWKrStats_Leaf_CP)
+```
+
+## Plots
+```{r}
+strip0 <- strip_themed(background_x = elem_list_rect(fill = c(rep("#0072B2", 1), rep("#D55E00", 4))),
+                        text_x = elem_list_text(colour = c(rep("white", 1), rep("black", 4))))
+
+Stats_C <- paste0("GLM: Accession p < 0.001; Soil p = 0.332; \nInteraction p = 0.868")
+Stats_N <- paste0("LM: Accession p < 0.001; Soil p = 0.725; \nInteraction p = 0.494")
+Stats_CN <- paste0("GLM: Accession p < 0.001; Soil p = 0.805; \nInteraction p = 0.269")
+
+# C
+# Significant letters in right order for stats Accession
+emmC <- emmC[order(emmC$Accession), ]
+
+# Alternate letters and blanks
+Blank <- rep("", 4)
+Letters_C <- c()
+
+for (i in 1:4) {
+  Letters_C[length(Letters_C) + 1] <- emmC$.group[i]
+  Letters_C[length(Letters_C) + 1] <- Blank[i]
+}
+
+# Remove spaces around letters
+Letters_C <- gsub(pattern = " ", replacement = "", x = Letters_C)
+Letters_C
+
+DataSum_C <- data.frame(Accession = rep(emmC$Accession, each = 2),
+                        Soil_conditioning = rep(c("Co", "Mb"), 2),
+                        Letters = Letters_C)
+
+# N
+# Significant letters in right order for stats Accession
+emmN <- emmN[order(emmN$Accession), ]
+
+# Alternate letters and blanks
+Blank <- rep("", 4)
+Letters_N <- c()
+
+for (i in 1:4) {
+  Letters_N[length(Letters_N) + 1] <- emmN$.group[i]
+  Letters_N[length(Letters_N) + 1] <- Blank[i]
+}
+
+# Remove spaces around letters
+Letters_N <- gsub(pattern = " ", replacement = "", x = Letters_N)
+Letters_N
+
+DataSum_N <- data.frame(Accession = rep(emmN$Accession, each = 2),
+                        Soil_conditioning = rep(c("Co", "Mb"), 2),
+                        Letters = Letters_N)
+
+# C/N
+# Significant letters in right order for stats Accession
+emmCN <- emmCN[order(emmCN$Accession), ]
+
+# Alternate letters and blanks
+Blank <- rep("", 4)
+Letters_CN <- c()
+
+for (i in 1:4) {
+  Letters_CN[length(Letters_CN) + 1] <- emmCN$.group[i]
+  Letters_CN[length(Letters_CN) + 1] <- Blank[i]
+}
+
+# Remove spaces around letters
+Letters_CN <- gsub(pattern = " ", replacement = "", x = Letters_CN)
+Letters_CN
+
+DataSum_CN <- data.frame(Accession = rep(emmCN$Accession, each = 2),
+                        Soil_conditioning = rep(c("Co", "Mb"), 2),
+                        Letters = Letters_CN)
+```
+
+### Plot data C
+```{r, fig.width=4, fig.height=4}
+ggplot(data = data, 
+       mapping = aes(y = C_content, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = C_content, x = Soil_conditioning),     #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar", 
+               linetype = 1, 
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot
+  facet_wrap2(~ Accession, # Split data into three graphs, a graph for each caterpillar number
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(Time = c("17" = "17 days"))
+             ) + 
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  geom_segment(aes(x = 0.8, y = 43, xend = 2.2, yend = 43)) +
+  geom_text(data = DataSum_C,
+            aes(label = Letters_C, y = 45.5, x = 1.5), # fill out the significant letters
+            size = 4,
+            hjust = 0.5,
+            #position = position_dodge(0.5)
+           ) +
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$C_content*1.15))) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) +
+  ylab("C content leaves (%)") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  ggtitle(Stats_C) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 4.2,
+         height = 4,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_C_content.svg", "PF_C_content.png"))
+```
+
+#### Not starting at 0
+```{r, fig.width=4, fig.height=4}
+ggplot(data = data, 
+       mapping = aes(y = C_content, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = C_content, x = Soil_conditioning),     #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar", 
+               linetype = 1, 
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot
+  facet_wrap2(~ Accession, # Split data into three graphs, a graph for each caterpillar number
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(Time = c("17" = "17 days"))
+             ) + 
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  geom_segment(aes(x = 0.8, y = 41.3, xend = 2.2, yend = 41.3)) +
+  geom_text(data = DataSum_C,
+            aes(label = Letters_C, y = 41.6, x = 1.5), # fill out the significant letters
+            size = 4,
+            hjust = 0.5,
+            #position = position_dodge(0.5)
+           ) +
+  #scale_y_continuous(#expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     #limits = c(0, max(data$C_content*1.15))) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) +
+  ylab("C content leaves (%)") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  ggtitle(Stats_C) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3.9,
+         height = 3.9,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_C_content2.svg", "PF_C_content2.png"))
+```
+
+### Plot data N
+```{r, fig.width=4, fig.height=4}
+ggplot(data = data, 
+       mapping = aes(y = N_content, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = N_content, x = Soil_conditioning),     #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar", 
+               linetype = 1, 
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot
+  facet_wrap2(~ Accession, # Split data into three graphs, a graph for each caterpillar number
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(Time = c("17" = "17 days"))
+             ) + 
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  geom_segment(aes(x = 0.8, y = 3.9, xend = 2.2, yend = 3.9)) +
+  geom_text(data = DataSum_N,
+            aes(label = Letters_N, y = 4.05, x = 1.5), # fill out the significant letters
+            size = 4,
+            hjust = 0.5,
+            #position = position_dodge(0.5)
+           ) +
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$N_content*1.15))) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) +
+  ylab("N content leaves (%)") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  ggtitle(Stats_N) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),        
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3.7,
+         height = 4,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_N_content.svg", "PF_N_content.png"))
+```
+
+### Plot data C_N_ratio
+```{r, fig.width=4, fig.height=4}
+ggplot(data = data, 
+       mapping = aes(y = C_N_ratio, x = Soil_conditioning, fill = Soil_conditioning)) + #Defines the data
+  stat_boxplot(aes(y = C_N_ratio, x = Soil_conditioning),     #Shows the error bars (should be added before box plots to have bars behind box plots)
+               geom = "errorbar", 
+               linetype = 1, 
+               width = 0.2) +
+  geom_boxplot(outliers = FALSE) + #Defines that the graph will be a box plot
+  facet_wrap2(~ Accession, # Split data into three graphs, a graph for each caterpillar number
+             nrow = 1,
+             strip = strip0
+             #labeller = labeller(Time = c("17" = "17 days"))
+             ) + 
+  geom_jitter(width = 0.25,
+              height = 0,
+              color = "black",
+              alpha = 0.2) + # Transparency is regulated with the alpha argument
+  stat_summary(fun = mean, 
+               geom = "point", 
+               size = 1.5, 
+               color = "gray30", 
+               fill = "white",
+               shape = 23) + #Shows the mean as a white circle
+  geom_segment(aes(x = 0.8, y = 35, xend = 2.2, yend = 35)) +
+  geom_text(data = DataSum_CN,
+            aes(label = Letters_CN, y = 37, x = 1.5), # fill out the significant letters
+            size = 4,
+            hjust = 0.5,
+            #position = position_dodge(0.5)
+           ) +
+  scale_y_continuous(expand = c(0, 0),        #start graph at y = min and x = min
+                     #breaks = seq(0, 30, 5)) #steps on the y-axis
+                     limits = c(0, max(data$C_N_ratio*1.15))) +   #y limits
+  scale_fill_manual(values = c("#882255", "#009E73")) +
+  ylab("C/N ratio leaves (%)") +    #y-label with Mb in italic
+  xlab("Soil treatment") +
+  ggtitle(Stats_CN) +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(), 
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3.7,
+         height = 4,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_CN_ratio.svg", "PF_CN_ratio.png"))
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3.7,
+         height = 3.5,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_CN_ratio_small.svg", "PF_CN_ratio_small.png"))
+```
+
+### Figure PSF effect C/N ratio
+```{r, fig.width=5, fig.height=3}
+ggplot(data = EMM_mod_df,
+       mapping = aes(y = estimate, x = Accession)) + #Defines the data
+  geom_hline(yintercept = 0, 
+             colour = "gray30") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), 
+                color = c(rep("#0072B2", 1), rep("#D55E00", 3)),
+                linewidth = 1,
+                width = 0.3) +
+  geom_point(aes(y = estimate, x = Accession),
+             size = 2) +
+  # geom_text(data = stats_PSF,
+  #           aes(label = Stats, y = 0.065, x = Accession), # fill out the significant letters
+  #           size = 8,
+  #           #hjust = 0.5,
+  #           #position = position_dodge(2)
+  #           ) +
+  # scale_y_continuous(breaks = seq(-0.03, 0.06, 0.03),
+  #                    limits = c(-0.05, 0.07)) + #steps on the y-axis
+  ggtitle(Stats_CN) +
+  ylab("PSF ratio C/N content") +    #y-label with Mb in italic
+  xlab("Accession") +
+  theme(panel.background = element_rect(fill = "white"), #theme of the graph
+        panel.border = element_blank(),
+        axis.line = element_line(), #show line for x and y axis
+        plot.title = element_text(size = 10, hjust = 0),
+        axis.text = element_text(size = 13, color = "black"),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_text(vjust = -0.5),
+        axis.title.y = element_text(vjust = 2.5), #, hjust = -0
+        strip.text = element_text(size = 13),
+        plot.margin = margin(5.5, 12, 5.5, 5.5, "points"),
+        legend.position = "none")
+
+mapply(function(x)
+  ggsave(plot = last_plot(), 
+         filename = x,
+         path = "C:/Users/kreek001/OneDrive - Wageningen University & Research/Chapters/Experimental Chapter 3/Result/Final graphs",
+         scale = 2.2,
+         width = 3,
+         height = 3,
+         units = "cm",
+         dpi = 300),
+  x = c("PF_PSF_ratio_CN-ratio.svg", "PF_PSF_ratio_CN-ratio.png"))
+```
